@@ -7,19 +7,19 @@
   },
   {
     "vm_name": "TEST ERROR",
-    "ip": "192.168.1.1",
+    "ip": "192.168.1.43",
     "physical_name": "",
     "system_name": ""
   },
   {
-    "vm_name": "TEST BLANK",
-    "ip": "0.0.0.0",
+    "vm_name": "sdsd",
+    "ip": "192.168.1.190",
     "physical_name": "",
     "system_name": ""
   },
   {
     "vm_name": "VM 04",
-    "ip": "",
+    "ip": "192.168.1.55",
     "physical_name": "",
     "system_name": ""
   },
@@ -43,12 +43,6 @@
   },
   {
     "vm_name": "VM 08",
-    "ip": "",
-    "physical_name": "",
-    "system_name": ""
-  },
-  {
-    "vm_name": "VM 09",
     "ip": "",
     "physical_name": "",
     "system_name": ""

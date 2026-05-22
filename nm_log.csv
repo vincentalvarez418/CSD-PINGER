@@ -40,3 +40,241 @@ timestamp,what,server,ip,diagnostic
 2026-05-21 16:11:10,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
 2026-05-21 16:11:10,TIMEOUT | loss=100%,TEST ERROR,192.168.1.1,"avg=—, recv=0/10, sev=red_blink"
 2026-05-21 16:11:24,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
+2026-05-21 18:27:30,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
+2026-05-21 18:27:31,TIMEOUT | loss=100%,TEST ERROR,192.168.1.1,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 18:27:45,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
+2026-05-21 18:27:51,TIMEOUT | loss=100%,TEST ERROR,192.168.1.1,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 18:28:05,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
+2026-05-21 18:30:32,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
+2026-05-21 18:30:32,TIMEOUT | loss=100%,TEST ERROR,192.168.1.1,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 18:30:46,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
+2026-05-21 18:32:18,UP | loss=50%,ETRACS,192.168.1.190,"avg=95 ms, recv=5/10, sev=orange_blink"
+2026-05-21 18:32:20,TIMEOUT | loss=100%,TEST ERROR,192.168.1.1,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 18:32:20,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
+2026-05-21 18:32:34,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
+2026-05-21 18:35:59,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
+2026-05-21 18:35:59,TIMEOUT | loss=100%,TEST ERROR,192.168.1.1,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 18:36:13,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
+2026-05-21 18:39:44,UNREACHABLE | loss=40%,sdsd,192.168.123.15,"avg=—, recv=6/10, sev=red_blink"
+2026-05-21 18:39:47,TIMEOUT | loss=100%,TEST ERROR,192.168.1.1,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 18:41:20,TIMEOUT | loss=100%,TEST ERROR,192.168.1.1,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 18:41:20,TIMEOUT | loss=100%,sdsd,192.168.123.15,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 18:44:47,UNREACHABLE | loss=60%,sdsd,192.168.123.15,"avg=—, recv=4/10, sev=red_blink"
+2026-05-21 18:44:49,TIMEOUT | loss=100%,TEST ERROR,192.168.1.1,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 18:45:33,UNREACHABLE | loss=50%,sdsd,192.168.123.15,"avg=—, recv=5/10, sev=red_blink"
+2026-05-21 18:45:35,TIMEOUT | loss=100%,TEST ERROR,192.168.1.1,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 18:46:29,UNREACHABLE | loss=60%,sdsd,192.168.123.15,"avg=—, recv=4/10, sev=red_blink"
+2026-05-21 18:49:09,TIMEOUT | loss=100%,sdsd,192.168.123.15,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 18:50:28,TIMEOUT | loss=100%,sdsd,192.168.123.15,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 18:55:01,UNREACHABLE | loss=60%,sdsd,192.168.123.15,"avg=—, recv=4/10, sev=red_blink"
+2026-05-21 18:55:20,UNREACHABLE | loss=30%,sdsd,192.168.123.15,"avg=—, recv=7/10, sev=red_blink"
+2026-05-21 18:59:41,UNREACHABLE | loss=40%,sdsd,192.168.123.15,"avg=—, recv=6/10, sev=red_blink"
+2026-05-21 19:03:13,TIMEOUT | loss=100%,sdsd,192.168.123.15,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 19:04:26,TIMEOUT | loss=100%,sdsd,192.168.123.15,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 19:05:36,TIMEOUT | loss=100%,sdsd,192.168.123.15,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 19:05:54,TIMEOUT | loss=100%,sdsd,192.168.123.15,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 19:06:53,TIMEOUT | loss=100%,sdsd,192.168.123.15,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 19:07:53,TIMEOUT | loss=100%,sdsd,192.168.123.15,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 19:08:53,TIMEOUT | loss=100%,sdsd,192.168.123.15,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 19:09:13,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:24:56,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:24:56,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:24:56,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:24:56,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:24:56,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:25:14,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:25:14,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:25:14,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:25:14,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:26:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:26:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:26:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:26:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:27:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:27:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:27:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:27:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:28:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:28:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:28:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:28:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:28:57,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:28:57,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:28:57,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:28:57,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:30:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:30:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:30:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:30:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:30:46,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:30:46,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:30:46,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:30:46,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:31:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:31:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:31:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:31:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:32:09,UP | loss=60%,sdsd,192.168.1.190,"avg=340 ms, recv=4/10, sev=orange_blink"
+2026-05-21 20:32:09,UP | loss=60%,TEST ERROR,192.168.1.43,"avg=339 ms, recv=4/10, sev=orange_blink"
+2026-05-21 20:32:09,UP | loss=60%,ETRACS,192.168.1.190,"avg=281 ms, recv=4/10, sev=orange_blink"
+2026-05-21 20:32:36,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:32:36,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:32:36,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:32:36,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:33:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:33:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:33:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:33:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:34:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:34:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:34:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:34:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:35:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:35:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:35:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:35:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:36:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:36:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:36:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:36:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:37:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:37:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:37:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:37:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:38:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:38:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:38:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:38:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:39:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:39:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:39:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:39:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:40:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:40:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:40:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:40:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:41:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:41:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:41:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:41:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:42:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:42:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:42:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:42:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:43:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:43:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:43:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:43:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:44:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:44:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:44:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:44:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:45:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:45:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:45:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:45:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:46:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:46:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:46:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:46:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:47:11,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:47:11,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:47:11,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:47:11,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:47:42,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:47:42,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 20:47:42,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:47:42,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 20:47:42,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:04:45,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:04:46,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:04:46,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:04:46,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:04:46,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:06:07,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:06:07,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:06:07,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:06:07,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:06:35,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:06:35,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:06:35,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:06:35,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:06:35,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:07:09,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:07:09,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:07:09,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:07:09,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:07:09,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:09:04,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:09:04,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:09:04,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:09:04,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:09:04,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:10:36,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:10:36,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:10:36,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:10:36,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:12:38,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:12:38,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:12:38,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:12:38,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:19:43,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:19:44,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:19:44,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:19:44,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:19:44,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:20:13,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:20:14,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:20:14,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:20:14,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:20:14,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:20:43,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:20:44,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:20:44,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:20:44,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:20:44,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:22:53,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:22:53,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:22:54,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:22:54,TIMEOUT | loss=100%,dw,19.165.5.69,sev=red_blink
+2026-05-21 21:22:54,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:22:54,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:22:54,TIMEOUT | loss=100%,dw,19.165.5.69,sev=red_blink
+2026-05-21 21:23:38,TIMEOUT | loss=100%,dw,19.165.5.69,sev=red_blink
+2026-05-21 21:23:38,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:23:38,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:23:38,TIMEOUT | loss=100%,dw,19.165.5.69,sev=red_blink
+2026-05-21 21:23:38,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:23:39,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:23:39,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:24:28,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:24:28,TIMEOUT | loss=100%,dw,19.165.5.69,sev=red_blink
+2026-05-21 21:24:28,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:24:28,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:24:28,TIMEOUT | loss=100%,dw,19.165.5.69,sev=red_blink
+2026-05-21 21:24:29,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:24:29,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:27:37,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:27:37,TIMEOUT | loss=100%,dw,19.165.5.69,sev=red_blink
+2026-05-21 21:27:37,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:27:37,TIMEOUT | loss=100%,dw,19.165.5.69,sev=red_blink
+2026-05-21 21:27:38,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 21:27:38,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 21:27:38,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 22:59:23,TIMEOUT | loss=100%,dw,19.165.5.69,sev=red_blink
+2026-05-21 22:59:23,TIMEOUT | loss=100%,ETRACS,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 22:59:23,TIMEOUT | loss=100%,dw,19.165.5.69,sev=red_blink
+2026-05-21 22:59:23,TIMEOUT | loss=100%,TEST ERROR,192.168.1.43,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 22:59:23,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 22:59:23,TIMEOUT | loss=100%,sdsd,192.168.1.190,"avg=—, recv=0/10, sev=red_blink"
+2026-05-21 22:59:23,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-21 23:00:32,TIMEOUT | loss=100%,dw,19.165.5.69,sev=red_blink
+2026-05-21 23:00:32,TIMEOUT | loss=100%,BUDGET,192.168.1.163,sev=red_blink
+2026-05-22 08:10:35,TIMEOUT | loss=100%,dw,19.165.5.69,sev=red_blink
+2026-05-22 08:34:09,TIMEOUT | loss=100%,ENGINEERS,192.168.26.24,sev=red_blink
+2026-05-22 08:34:09,TIMEOUT | loss=100%,ENGINEERS,192.168.26.24,sev=red_blink
+2026-05-22 08:40:53,TIMEOUT | loss=100%,asdas,19.65.78.5,sev=red_blink
+2026-05-22 08:44:04,UNREACHABLE | loss=90%,asdas,19.65.78.5,sev=red_blink
+2026-05-22 08:44:04,TIMEOUT | loss=100%,asdas,19.65.78.5,sev=red_blink
+2026-05-22 08:47:35,UNREACHABLE | loss=80%,asdas,19.65.78.5,sev=red_blink
+2026-05-22 08:47:36,UNREACHABLE | loss=80%,asdas,19.65.78.5,sev=red_blink

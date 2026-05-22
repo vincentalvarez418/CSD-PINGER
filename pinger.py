@@ -218,11 +218,14 @@ class MiscRow(tk.Frame):
                                  bg=CARD_BG, anchor="w")
         self.name_lbl.pack(side="left", fill="x", expand=True)
 
-        tk.Button(top, text="✕", font=("Consolas", 7),
-                  fg=TEXT_DIM, bg=CARD_BG,
-                  activeforeground=RED, activebackground=CARD_BG,
-                  relief="flat", bd=0, cursor="hand2",
-                  command=self._remove).pack(side="right")
+        self._delete_btn = tk.Button(top, text="✕", font=("Consolas", 7),
+                                     fg=TEXT_DIM, bg=CARD_BG,
+                                     activeforeground=RED, activebackground=CARD_BG,
+                                     relief="flat", bd=0, cursor="hand2",
+                                     command=self._remove)
+        self._delete_btn.pack(side="right")
+        self._delete_btn.bind("<Enter>", lambda _: self._delete_btn.config(fg=RED))
+        self._delete_btn.bind("<Leave>", lambda _: self._delete_btn.config(fg=TEXT_DIM))
 
         bot = tk.Frame(self, bg=CARD_BG)
         bot.pack(fill="x", pady=(2, 0))
@@ -307,8 +310,9 @@ class MiscRow(tk.Frame):
 
 # ── Misc Sidebar ─────────────────────────────────────────────────
 class MiscSidebar(tk.Frame):
-    def __init__(self, parent, **kw):
+    def __init__(self, parent, app=None, **kw):
         super().__init__(parent, bg=BG, **kw)
+        self.app = app
         self.rows = []
         self._build()
         self._load()
@@ -317,33 +321,25 @@ class MiscSidebar(tk.Frame):
         hdr = tk.Frame(self, bg=BG)
         hdr.pack(fill="x", pady=(0, 6))
 
-        tk.Label(hdr, text="MISC", font=("Consolas", 9, "bold"),
-                 fg=TEXT_DIM, bg=BG).pack(side="left")
+        tk.Label(hdr, text="BIOMETRIC DEVICE", font=("Consolas", 9, "bold"),
+             fg=TEXT_DIM, bg=BG).pack(side="left")
+
+        self._add_dialog = None
 
         tk.Button(hdr, text="⟳", font=("Consolas", 9),
-                  fg=TEXT_DIM, bg=BG,
-                  activeforeground=ACCENT, activebackground=BG,
-                  relief="flat", bd=0, cursor="hand2",
-                  command=self._ping_all).pack(side="right")
+              fg=TEXT_DIM, bg=BG,
+              activeforeground=ACCENT, activebackground=BG,
+              relief="flat", bd=0, cursor="hand2",
+              command=self._ping_all).pack(side="right")
 
-        self.list_frame = tk.Frame(self, bg=BG)
+        # scrollable list for biometric rows
+        self.list_frame = ScrollableFrame(self, bg=BG)
         self.list_frame.pack(fill="both", expand=True)
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", pady=(8, 6))
 
-        # Toggle button row
+        # legacy inline add panel kept but hidden; popup used instead
         self._add_visible = False
-        toggle_row = tk.Frame(self, bg=BG)
-        toggle_row.pack(fill="x")
-        self._toggle_btn = tk.Button(
-            toggle_row, text="+ ADD HOST",
-            font=("Consolas", 8, "bold"),
-            fg=TEXT_DIM, bg=BG,
-            activeforeground=ACCENT, activebackground=BG,
-            relief="flat", bd=0, cursor="hand2",
-            anchor="w",
-            command=self._toggle_add_panel)
-        self._toggle_btn.pack(side="left", fill="x", expand=True)
 
         # Collapsible add panel
         self._add_panel = tk.Frame(self, bg=BG)
@@ -369,24 +365,31 @@ class MiscSidebar(tk.Frame):
         self._setup_ph(ip_e, self._ip_var, "IP")
 
         tk.Button(add_f, text="+", font=("Consolas", 9, "bold"),
-                  fg=BG, bg=ACCENT,
-                  activeforeground=BG, activebackground="#79b8ff",
-                  relief="flat", bd=0, padx=6, pady=3, cursor="hand2",
-                  command=self._add_entry).pack(side="left")
+              fg=BG, bg=ACCENT,
+              activeforeground=BG, activebackground="#79b8ff",
+              relief="flat", bd=0, padx=6, pady=3, cursor="hand2",
+              command=self._add_entry).pack(side="left")
 
         self._msg_lbl = tk.Label(self._add_panel, text="", font=("Consolas", 7),
                                  fg=TEXT_DIM, bg=BG)
         self._msg_lbl.pack(anchor="w", pady=(3, 0))
 
     def _toggle_add_panel(self):
+        # keep for compatibility but prefer popup
         if self._add_visible:
             self._add_panel.pack_forget()
-            self._toggle_btn.config(text="+ ADD HOST", fg=TEXT_DIM)
             self._add_visible = False
         else:
             self._add_panel.pack(fill="x")
-            self._toggle_btn.config(text="▲ ADD HOST", fg=ACCENT)
             self._add_visible = True
+
+    def _open_bio_dialog(self):
+        # Prevent duplicate dialogs
+        if self._add_dialog and self._add_dialog.winfo_exists():
+            self._add_dialog.focus_set()
+            return
+        parent_app = self.app if getattr(self, 'app', None) else self.master
+        self._add_dialog = AddBiometricDialog(parent_app, self._add_entry_from_dialog)
 
     def _setup_ph(self, entry, var, placeholder):
         var.set(placeholder)
@@ -406,10 +409,20 @@ class MiscSidebar(tk.Frame):
         for e in load_misc():
             self._create_row(e)
 
-    def _create_row(self, entry):
-        row = MiscRow(self.list_frame, entry, self)
-        row.pack(fill="x", pady=(0, 4))
-        self.rows.append(row)
+    def _create_row(self, entry, top=False):
+        container = self.list_frame.inner
+        row = MiscRow(container, entry, self)
+        children = container.winfo_children()
+        if top and children:
+            row.pack(fill="x", pady=(0, 4), before=children[0])
+            self.rows.insert(0, row)
+        else:
+            row.pack(fill="x", pady=(0, 4))
+            self.rows.append(row)
+        try:
+            self.list_frame.bind_mw(row)
+        except Exception:
+            pass
         return row
 
     def _add_entry(self):
@@ -421,12 +434,22 @@ class MiscSidebar(tk.Frame):
         if not ip or ip == "IP" or not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip):
             self._msg_lbl.config(text="bad IP", fg=RED)
             return
-        self._create_row({"name": name, "ip": ip})
+        self._create_row({"name": name, "ip": ip}, top=True)
         self._save()
         self._name_var.set("Name")
         self._ip_var.set("IP")
         self._msg_lbl.config(text=f"added {name}", fg=GREEN)
         self.after(2000, lambda: self._msg_lbl.config(text=""))
+
+    def _add_entry_from_dialog(self, entry):
+        # callback from AddBiometricDialog
+        self._create_row(entry, top=True)
+        self._save()
+        try:
+            self._msg_lbl.config(text=f"added {entry.get('name','')}", fg=GREEN)
+            self.after(2000, lambda: self._msg_lbl.config(text=""))
+        except Exception:
+            pass
 
     def remove_row(self, row):
         row.pack_forget()
@@ -532,8 +555,18 @@ class HostCard(tk.Frame):
             top, "vm_name", "VM Name", ("Consolas", 15, "bold"), fg_active=TEXT, width=14)
         self.vm_entry.pack(side="left")
 
+        # Delete button with red glow on hover (right side, furthest right)
+        self._delete_btn = tk.Button(top, text="✕", font=("Consolas", 10),
+                                     fg=TEXT_DIM, bg=CARD_BG,
+                                     activeforeground=RED, activebackground=CARD_BG,
+                                     relief="flat", bd=0, cursor="hand2",
+                                     command=self._delete_card)
+        self._delete_btn.pack(side="right", padx=(6, 0))
+        self._delete_btn.bind("<Enter>", lambda _: self._delete_btn.config(fg=RED))
+        self._delete_btn.bind("<Leave>", lambda _: self._delete_btn.config(fg=TEXT_DIM))
+
         self.badge_frame = tk.Frame(top, bg=ACCENT_DIM, padx=7, pady=2)
-        self.badge_frame.pack(side="right")
+        self.badge_frame.pack(side="right", padx=(0, 6))
         self.badge = tk.Label(self.badge_frame, text=" IDLE ",
                               font=("Consolas", 8, "bold"), fg=ACCENT, bg=ACCENT_DIM)
         self.badge.pack()
@@ -599,6 +632,23 @@ class HostCard(tk.Frame):
                   command=self._ping_single).pack(side="left")
         self.ts_lbl = tk.Label(bot, text="—", font=("Consolas", 7), fg=TEXT_DIM, bg=CARD_BG)
         self.ts_lbl.pack(side="right")
+
+    def _clear_card_focus(self, event=None):
+        self.focus_set()
+        self._clear_entry_selection(self)
+
+    def clear_selection(self):
+        """Clear all entry selections on this card."""
+        self._clear_entry_selection(self)
+
+    def _clear_entry_selection(self, widget):
+        if isinstance(widget, tk.Entry):
+            try:
+                widget.selection_clear()
+            except Exception:
+                pass
+        for child in widget.winfo_children():
+            self._clear_entry_selection(child)
 
     def _ip_focus_in(self, _=None):
         if self.ip_var.get() in ("Enter IP…", "0.0.0.0") and not self.host.get("ip"):
@@ -762,6 +812,16 @@ class HostCard(tk.Frame):
             diag = f"avg={avg}, recv={recv}/{PING_COUNT}, sev={sev}"
             log_event(what, self.host.get("vm_name", ""), self.host.get("ip", ""), diag)
 
+    def _delete_card(self):
+        """Delete this host card."""
+        self.grid_forget()
+        self.destroy()
+        self.app.cards.remove(self)
+        save_hosts([c.host for c in self.app.cards])
+        self.app._set_status(f"Deleted {self.host.get('vm_name', 'host')}", TEXT_DIM)
+        # Rebuild grid layout to fill vacant space
+        self.app._rebuild_grid()
+
 
 # ── Scrollable Frame ─────────────────────────────────────────────
 class ScrollableFrame(tk.Frame):
@@ -801,6 +861,190 @@ class ScrollableFrame(tk.Frame):
             self.bind_mw(c)
 
 
+# ── Add Host Dialog (Floating Popup) ────────────────────────────
+class AddHostDialog(tk.Toplevel):
+    def __init__(self, parent, callback):
+        super().__init__(parent)
+        self.title("Add Host")
+        self.configure(bg=CARD_BG)
+        self.geometry("500x180")
+        self.resizable(False, False)
+        self.callback = callback
+        
+        # Make it float on top
+        self.attributes("-topmost", True)
+        
+        self._build()
+        
+        # Center on parent window AFTER building
+        self.update_idletasks()
+        parent_x = parent.winfo_x() + parent.winfo_width() // 2
+        parent_y = parent.winfo_y() + parent.winfo_height() // 2
+        dialog_x = parent_x - 250
+        dialog_y = parent_y - 90
+        self.geometry(f"500x180+{dialog_x}+{dialog_y}")
+        
+        self.focus_set()
+
+    def _build(self):
+        # Header
+        tk.Label(self, text="ADD HOST",
+                 font=("Consolas", 10, "bold"), fg=TEXT, bg=CARD_BG
+                 ).pack(anchor="w", padx=15, pady=(12, 8))
+
+        # Input fields row
+        fields_frame = tk.Frame(self, bg=CARD_BG)
+        fields_frame.pack(fill="x", padx=15, pady=(0, 10))
+
+        self._vars = []
+        field_defs = [("VM Name", 14), ("IP", 14), ("Physical Name", 16), ("System", 12)]
+        
+        for placeholder, width in field_defs:
+            var = tk.StringVar(value=placeholder)
+            e = tk.Entry(fields_frame, textvariable=var, font=("Consolas", 9),
+                         fg=TEXT_DIM, bg=BG, insertbackground=TEXT,
+                         relief="flat", highlightbackground=BORDER,
+                         highlightthickness=1, width=width)
+            e.pack(side="left", ipady=4, padx=(0, 6))
+            
+            # Placeholder logic
+            def focus_in(event, v=var, p=placeholder, w=e):
+                if v.get() == p:
+                    v.set("")
+                    w.config(fg=TEXT)
+            def focus_out(event, v=var, p=placeholder, w=e):
+                if not v.get():
+                    v.set(p)
+                    w.config(fg=TEXT_DIM)
+            
+            e.bind("<FocusIn>", focus_in)
+            e.bind("<FocusOut>", focus_out)
+            self._vars.append((e, var, placeholder))
+
+        # Buttons row
+        btn_frame = tk.Frame(self, bg=CARD_BG)
+        btn_frame.pack(fill="x", padx=15, pady=(0, 12))
+
+        tk.Button(btn_frame, text="+ ADD",
+                  font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
+                  activeforeground=BG, activebackground="#79b8ff",
+                  relief="flat", bd=0, padx=12, pady=4, cursor="hand2",
+                  command=self._on_add).pack(side="left", padx=(0, 6))
+
+        cancel_btn = tk.Button(btn_frame, text="Cancel",
+              font=("Consolas", 9), fg=TEXT_DIM, bg=CARD_BG,
+              activeforeground=TEXT, activebackground=BORDER,
+              relief="flat", bd=0, padx=12, pady=4, cursor="hand2",
+              command=self.destroy)
+        cancel_btn.pack(side="left")
+        cancel_btn.bind("<Enter>", lambda e: cancel_btn.config(fg=RED))
+        cancel_btn.bind("<Leave>", lambda e: cancel_btn.config(fg=TEXT_DIM))
+
+        self._msg_lbl = tk.Label(self, text="", font=("Consolas", 8),
+                                 fg=TEXT_DIM, bg=CARD_BG)
+        self._msg_lbl.pack(anchor="w", padx=15, pady=(0, 8))
+        
+        # Close dialog on Escape key
+        self.bind("<Escape>", lambda _: self.destroy())
+
+    def _on_add(self):
+        vals = [e.get().strip() for e, _, _ in self._vars]
+        defaults = [ph for _, _, ph in self._vars]
+        vm, ip, phys, sys_n = [
+            "" if v == defaults[i] else v for i, v in enumerate(vals)
+        ]
+        
+        if ip and not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip):
+            self._msg_lbl.config(text="Invalid IP format", fg=RED)
+            return
+        
+        host = {
+            "vm_name": vm,
+            "ip": ip,
+            "physical_name": phys,
+            "system_name": sys_n,
+        }
+        
+        self.callback(host)
+        self.destroy()
+
+
+class AddBiometricDialog(tk.Toplevel):
+    def __init__(self, parent, callback):
+        super().__init__(parent)
+        self.title("Add BIO")
+        self.configure(bg=CARD_BG)
+        self.geometry("360x120")
+        self.resizable(False, False)
+        self.callback = callback
+        self.attributes("-topmost", True)
+        self._build()
+        self.update_idletasks()
+        # center on parent
+        try:
+            parent_x = parent.winfo_x() + parent.winfo_width() // 2
+            parent_y = parent.winfo_y() + parent.winfo_height() // 2
+            dialog_x = parent_x - 180
+            dialog_y = parent_y - 60
+            self.geometry(f"360x120+{dialog_x}+{dialog_y}")
+        except Exception:
+            pass
+        self.focus_set()
+
+    def _build(self):
+        tk.Label(self, text="ADD BIO", font=("Consolas", 10, "bold"), fg=TEXT, bg=CARD_BG).pack(anchor="w", padx=12, pady=(10,6))
+        frm = tk.Frame(self, bg=CARD_BG)
+        frm.pack(fill="x", padx=12)
+        self._name_var = tk.StringVar()
+        self._ip_var = tk.StringVar()
+        name_e = tk.Entry(frm, textvariable=self._name_var, font=("Consolas", 9), bg=BG, insertbackground=TEXT, relief="flat", highlightbackground=BORDER, highlightthickness=1, width=16)
+        name_e.pack(side="left", ipady=4, padx=(0,6))
+        ip_e = tk.Entry(frm, textvariable=self._ip_var, font=("Consolas", 9), bg=BG, insertbackground=TEXT, relief="flat", highlightbackground=BORDER, highlightthickness=1, width=14)
+        ip_e.pack(side="left", ipady=4)
+
+        # Placeholder behavior: dim text, clear on focus, restore on blur
+        def _bind_placeholder(entry, var, placeholder):
+            var.set(placeholder)
+            entry.config(fg=TEXT_DIM)
+            def _fi(_=None):
+                if var.get() == placeholder:
+                    var.set("")
+                    entry.config(fg=TEXT)
+            def _fo(_=None):
+                if not var.get().strip():
+                    var.set(placeholder)
+                    entry.config(fg=TEXT_DIM)
+            entry.bind("<FocusIn>", _fi)
+            entry.bind("<FocusOut>", _fo)
+        _bind_placeholder(name_e, self._name_var, "Name")
+        _bind_placeholder(ip_e, self._ip_var, "IP")
+
+        btns = tk.Frame(self, bg=CARD_BG)
+        btns.pack(fill="x", padx=12, pady=(8,10))
+        tk.Button(btns, text="+ ADD", font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT, activeforeground=BG, activebackground="#79b8ff", relief="flat", bd=0, padx=10, pady=4, cursor="hand2", command=self._on_add).pack(side="left")
+        cancel_btn2 = tk.Button(btns, text="Cancel", font=("Consolas", 9), fg=TEXT_DIM, bg=CARD_BG, activeforeground=TEXT, activebackground=BORDER, relief="flat", bd=0, padx=10, pady=4, cursor="hand2", command=self.destroy)
+        cancel_btn2.pack(side="left", padx=(6,0))
+        cancel_btn2.bind("<Enter>", lambda e: cancel_btn2.config(fg=RED))
+        cancel_btn2.bind("<Leave>", lambda e: cancel_btn2.config(fg=TEXT_DIM))
+        self._msg = tk.Label(self, text="", font=("Consolas", 8), fg=TEXT_DIM, bg=CARD_BG)
+        self._msg.pack(anchor="w", padx=12, pady=(0,0))
+        self.bind("<Escape>", lambda _: self.destroy())
+
+    def _on_add(self):
+        name = self._name_var.get().strip()
+        ip = self._ip_var.get().strip()
+        if name in ("", "Name"):
+            self._msg.config(text="need a name", fg=YELLOW)
+            return
+        if not ip or ip == "IP" or not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip):
+            self._msg.config(text="bad IP", fg=RED)
+            return
+        entry = {"name": name, "ip": ip}
+        self.callback(entry)
+        self.destroy()
+
+
+
 # ── Main App ─────────────────────────────────────────────────────
 class PingApp(tk.Tk):
 
@@ -820,6 +1064,7 @@ class PingApp(tk.Tk):
         self._interval_idx = 1
         self.cards         = []
         self._hosts_data   = load_hosts()
+        self._add_dialog   = None  # Track the open dialog
         self._build_ui()
         self.after(500, self._ping_all)
 
@@ -832,12 +1077,12 @@ class PingApp(tk.Tk):
         return INTERVAL_CYCLE[self._interval_idx][0]
 
     def _toggle_add_host(self):
-        if self._add_visible:
-            self.add_panel.pack_forget()
-            self._add_visible = False
-        else:
-            self.add_panel.pack(fill="x", padx=14, pady=(0, 8))
-            self._add_visible = True
+        # Prevent duplicate dialogs
+        if self._add_dialog and self._add_dialog.winfo_exists():
+            self._add_dialog.focus_set()
+            return
+        
+        self._add_dialog = AddHostDialog(self, self._add_host_from_dialog)
 
     def _build_ui(self):
         # ── Header ──
@@ -876,23 +1121,40 @@ class PingApp(tk.Tk):
             self._iv_btns[label] = b
 
         # Header buttons
-        tk.Button(right_hdr, text="⚙",
-                  font=("Consolas", 11), fg=TEXT_DIM, bg=BG,
-                  activeforeground=TEXT, activebackground=BG,
-                  relief="flat", bd=0, padx=6, pady=5, cursor="hand2",
-                  command=self._toggle_settings).pack(side="left", padx=(0, 4))
+        self._settings_btn = tk.Button(right_hdr, text="⚙",
+                                         font=("Consolas", 11), fg=TEXT_DIM, bg=BG,
+                                         activeforeground=TEXT, activebackground=BG,
+                                         relief="flat", bd=0, padx=6, pady=5, cursor="hand2",
+                                         command=self._toggle_settings)
+        self._settings_btn.pack(side="left", padx=(0, 4))
 
-        tk.Button(right_hdr, text="+ HOST",
-                  font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
-                  activeforeground=BG, activebackground="#79b8ff",
-                  relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
-                  command=self._toggle_add_host).pack(side="left", padx=(0, 8))
+        self._add_host_btn = tk.Button(right_hdr, text="+ HOST",
+                                       font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
+                                       activeforeground=BG, activebackground="#79b8ff",
+                                       relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
+                                       command=self._toggle_add_host)
+        self._add_host_btn.pack(side="left", padx=(0, 8))
+        self._add_host_btn.bind("<Enter>", lambda _: self._add_host_btn.config(bg="#79b8ff"))
+        self._add_host_btn.bind("<Leave>", lambda _: self._add_host_btn.config(bg=ACCENT))
 
-        tk.Button(right_hdr, text="  PING ALL  ",
-                  font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
-                  activeforeground=BG, activebackground="#79b8ff",
-                  relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
-                  command=self._ping_all).pack(side="left")
+        # + BIO button between + HOST and PING ALL
+        self._bio_btn = tk.Button(right_hdr, text="+ BIO",
+                      font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
+                      activeforeground=BG, activebackground="#79b8ff",
+                      relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
+                      command=lambda: getattr(self, 'misc', None) and self.misc._open_bio_dialog())
+        self._bio_btn.pack(side="left", padx=(0, 8))
+        self._bio_btn.bind("<Enter>", lambda _: self._bio_btn.config(bg="#79b8ff"))
+        self._bio_btn.bind("<Leave>", lambda _: self._bio_btn.config(bg=ACCENT))
+
+        self._ping_all_btn = tk.Button(right_hdr, text="  PING ALL  ",
+                                       font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
+                                       activeforeground=BG, activebackground="#79b8ff",
+                                       relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
+                                       command=self._ping_all)
+        self._ping_all_btn.pack(side="left")
+        self._ping_all_btn.bind("<Enter>", lambda _: self._ping_all_btn.config(bg="#79b8ff"))
+        self._ping_all_btn.bind("<Leave>", lambda _: self._ping_all_btn.config(bg=ACCENT))
 
         tk.Button(right_hdr, text="⛶",
                   font=("Consolas", 13), fg=TEXT_DIM, bg=BG,
@@ -907,30 +1169,6 @@ class PingApp(tk.Tk):
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x")
         self._settings_anchor = tk.Frame(self, bg=BG, height=0)
         self._settings_anchor.pack(fill="x")
-
-        # ── Add host panel (collapsible, above body) ──
-        self._add_visible = False
-        self.add_panel = tk.Frame(self, bg=CARD_BG,
-                                  highlightbackground=BORDER, highlightthickness=1,
-                                  padx=18, pady=10)
-
-        tk.Label(self.add_panel, text="ADD HOST",
-                 font=("Consolas", 8, "bold"), fg=TEXT_DIM, bg=CARD_BG
-                 ).pack(anchor="w", pady=(0, 5))
-
-        add_row = tk.Frame(self.add_panel, bg=CARD_BG)
-        add_row.pack(fill="x")
-        fields = [("VM Name", 14), ("IP", 14), ("Physical Name", 16), ("System", 16)]
-        self._add_vars = []
-        for ph, w in fields:
-            e = self._ph_entry(add_row, ph, w)
-            e.pack(side="left", ipady=4, padx=(0, 6))
-            self._add_vars.append((e, ph))
-        tk.Button(add_row, text="+ ADD",
-                  font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
-                  activeforeground=BG, activebackground="#79b8ff",
-                  relief="flat", bd=0, padx=10, pady=4, cursor="hand2",
-                  command=self._add_host).pack(side="left")
 
         # ── Body: left card grid + divider + right misc sidebar ──
         body = tk.Frame(self, bg=BG)
@@ -958,29 +1196,12 @@ class PingApp(tk.Tk):
         sidebar_outer.pack(side="left", fill="y")
         sidebar_outer.pack_propagate(False)
 
-        self.misc = MiscSidebar(sidebar_outer)
+        self.misc = MiscSidebar(sidebar_outer, app=self)
         self.misc.pack(fill="both", expand=True, padx=12, pady=12)
 
-
-        self.bind_all("<Button-1>", lambda e: self.focus_set() if e.widget not in (
-            self.grid_f, *[w for card in self.cards for w in card.winfo_children()]
-        ) else None)
-
-        self.bind_all("<Button-1>", self._defocus)
+        self.bind_all("<Button-1>", self._on_global_click)
 
         self._refresh_interval_buttons()
-
-    def _ph_entry(self, parent, placeholder, width):
-        var = tk.StringVar(value=placeholder)
-        e = tk.Entry(parent, textvariable=var, font=("Consolas", 9),
-                     fg=TEXT_DIM, bg=BG, insertbackground=TEXT,
-                     relief="flat", highlightbackground=BORDER,
-                     highlightthickness=1, width=width)
-        e.bind("<FocusIn>",  lambda ev, v=var, p=placeholder, w=e:
-               (v.set(""), w.config(fg=TEXT)) if v.get() == p else None)
-        e.bind("<FocusOut>", lambda ev, v=var, p=placeholder, w=e:
-               (v.set(p), w.config(fg=TEXT_DIM)) if not v.get() else None)
-        return e
 
     def _add_card(self, host, idx):
         card = HostCard(self.grid_f, host, self)
@@ -990,6 +1211,15 @@ class PingApp(tk.Tk):
         self.cards.append(card)
         self.scroll.bind_mw(card)
 
+    def _rebuild_grid(self):
+        """Rebuild the card grid layout after deletion to fill vacant space."""
+        for card in self.cards:
+            card.grid_forget()
+        for idx, card in enumerate(self.cards):
+            r, c = divmod(idx, 3)
+            pad_l = (0, 5) if c == 0 else (5, 5) if c == 1 else (5, 0)
+            card.grid(row=r, column=c, sticky="nsew", padx=pad_l, pady=(0, 10))
+
     def _set_status(self, msg, color=TEXT_DIM):
         self.status_lbl.config(text=msg, fg=color)
 
@@ -998,6 +1228,29 @@ class PingApp(tk.Tk):
         for lbl, btn in self._iv_btns.items():
             btn.config(fg=(BG if lbl == cur_label else TEXT_DIM),
                        bg=(ACCENT if lbl == cur_label else CARD_BG))
+
+    def _clear_host_entry_focus(self):
+        self.focus_set()
+        for card in self.cards:
+            card.clear_selection()
+
+    def _on_global_click(self, event):
+        widget = event.widget
+        if self._settings_visible:
+            if widget is self._settings_btn:
+                return
+            parent = widget
+            while parent:
+                if parent is self._settings_frame:
+                    return
+                parent = parent.master
+            self._toggle_settings()
+
+        # If click is on a text entry, keep focus there
+        if isinstance(widget, tk.Entry):
+            return
+
+        self._clear_host_entry_focus()
 
     def _user_set_interval(self, label):
         idx = next(i for i, (l, _) in enumerate(INTERVAL_CYCLE) if l == label)
@@ -1016,13 +1269,20 @@ class PingApp(tk.Tk):
         if self._running:
             return
         active = [c for c in self.cards if c.host.get("ip")]
-        if not active:
+        misc_exists = bool(self.misc.rows)
+        if not active and not misc_exists:
             return
-        self._running = True
-        self._set_status("Pinging all hosts…", YELLOW)
-        for c in active:
-            c.set_pinging()
-        threading.Thread(target=self._ping_thread, args=(active,), daemon=True).start()
+
+        if active:
+            self._running = True
+            self._set_status("Pinging all hosts…", YELLOW)
+            for c in active:
+                c.set_pinging()
+            threading.Thread(target=self._ping_thread, args=(active,), daemon=True).start()
+        else:
+            self._set_status("Pinging misc entries…", YELLOW)
+
+        self.misc._ping_all()
 
     def _ping_thread(self, cards):
         done = [0]
@@ -1045,7 +1305,7 @@ class PingApp(tk.Tk):
         self._set_status(f"Last run: {now}", TEXT_DIM)
         if os.path.exists(LOG_PATH):
             self.log_lbl.config(text="📋 log", fg=ORANGE)
-        self.misc._ping_all() 
+
 
     def _toggle_settings(self):
         if self._settings_visible:
@@ -1070,29 +1330,17 @@ class PingApp(tk.Tk):
         if self._interval > 0:
             self._auto_job = self.after(self._interval * 1000, self._schedule_auto)
 
-    def _add_host(self):
-        vals     = [e.get().strip() for e, ph in self._add_vars]
-        defaults = [ph for _, ph in self._add_vars]
-        vm, ip, phys, sys_n = [
-            "" if v == defaults[i] else v for i, v in enumerate(vals)
-        ]
-        if ip and not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip):
-            self._set_status("Invalid IP format", RED)
-            return
-        host = {
-            "vm_name":       vm or f"VM {len(self.cards)+1:02d}",
-            "ip":            ip,
-            "physical_name": phys,
-            "system_name":   sys_n,
-        }
+    def _add_host_from_dialog(self, host):
+        """Called by AddHostDialog with host data."""
+        # Auto-generate VM name if not provided
+        if not host["vm_name"]:
+            host["vm_name"] = f"VM {len(self.cards)+1:02d}"
+        
         self._add_card(host, len(self.cards))
         save_hosts([c.host for c in self.cards])
         self.after(100, lambda: self.scroll.canvas.yview_moveto(1.0))
-        for e, ph in self._add_vars:
-            e.config(fg=TEXT_DIM)
-            e.delete(0, "end")
-            e.insert(0, ph)
-        self._set_status(f"Added {host['vm_name']} ({ip or 'no IP'})", GREEN)
+        self._set_status(f"Added {host['vm_name']} ({host['ip'] or 'no IP'})", GREEN)
+        self._add_dialog = None  # Clear dialog reference
 
 
 if __name__ == "__main__":
