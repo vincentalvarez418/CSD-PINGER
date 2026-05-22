@@ -236,11 +236,21 @@ class MiscRow(tk.Frame):
                                  bg=CARD_BG, anchor="w")
         self.name_lbl.pack(side="left", fill="x", expand=True)
 
-        tk.Button(top, text="✕", font=("Consolas", 7),
+        # Delete button with red hover effect
+        delete_btn = tk.Button(top, text="✕", font=("Consolas", 7),
                   fg=TEXT_DIM, bg=CARD_BG,
                   activeforeground=RED, activebackground=CARD_BG,
                   relief="flat", bd=0, cursor="hand2",
-                  command=self._remove).pack(side="right")
+                  command=self._remove)
+        delete_btn.pack(side="right")
+        
+        # Red hover effect for delete button
+        def delete_enter(e):
+            delete_btn.config(fg=RED)
+        def delete_leave(e):
+            delete_btn.config(fg=TEXT_DIM)
+        delete_btn.bind("<Enter>", delete_enter)
+        delete_btn.bind("<Leave>", delete_leave)
 
         bot = tk.Frame(self, bg=CARD_BG)
         bot.pack(fill="x", pady=(2, 0))
@@ -354,7 +364,7 @@ class MiscSidebar(tk.Frame):
         hdr = tk.Frame(self, bg=BG)
         hdr.pack(fill="x", pady=(0, 6))
 
-        tk.Label(hdr, text="MISCELLANEOUS", font=("Consolas", 9, "bold"),
+        tk.Label(hdr, text="BIOMETRIC DEVICES", font=("Consolas", 9, "bold"),
                  fg=TEXT_DIM, bg=BG).pack(side="left")
 
         tk.Button(hdr, text="⟳", font=("Consolas", 9),
@@ -411,20 +421,7 @@ class MiscSidebar(tk.Frame):
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", pady=(8, 6))
 
-        # Toggle button row
-        self._add_visible = False
-        toggle_row = tk.Frame(self, bg=BG)
-        toggle_row.pack(fill="x")
-        self._toggle_btn = tk.Button(
-            toggle_row, text="+ ADD MISCELLANEOUS HOST",
-            font=("Consolas", 8, "bold"),
-            fg=TEXT_DIM, bg=BG,
-            activeforeground=ACCENT, activebackground=BG,
-            relief="flat", bd=0, cursor="hand2",
-            anchor="w",
-            command=self._open_add_misc_modal)
-        self._toggle_btn.pack(side="left", fill="x", expand=True)
-
+       
         # Collapsible add panel
         self._add_panel = tk.Frame(self, bg=BG)
 
@@ -554,7 +551,7 @@ class MiscSidebar(tk.Frame):
         # Title
         tk.Label(
             card,
-            text="ADD MISCELLANEOUS HOST",
+            text="ADD BIOMETRIC IP",
             font=("Consolas", 10, "bold"),
             fg=TEXT,
             bg=CARD_BG
@@ -669,7 +666,8 @@ class MiscSidebar(tk.Frame):
             command=do_add
         ).pack(side="left")
 
-        tk.Button(
+        # CANCEL button with red hover effect
+        cancel_btn = tk.Button(
             btn_row,
             text="CANCEL",
             font=("Consolas", 9, "bold"),
@@ -683,7 +681,16 @@ class MiscSidebar(tk.Frame):
             pady=5,
             cursor="hand2",
             command=modal.destroy
-        ).pack(side="left", padx=(8, 0))
+        )
+        cancel_btn.pack(side="left", padx=(8, 0))
+        
+        # Red hover effect for cancel button
+        def cancel_enter(e):
+            cancel_btn.config(fg=RED)
+        def cancel_leave(e):
+            cancel_btn.config(fg=TEXT_DIM)
+        cancel_btn.bind("<Enter>", cancel_enter)
+        cancel_btn.bind("<Leave>", cancel_leave)
 
         name_e.focus_set()
 
@@ -1393,7 +1400,8 @@ class PingApp(tk.Tk):
             command=do_add
         ).pack(side="left")
 
-        tk.Button(
+        # CANCEL button with red hover effect
+        cancel_btn = tk.Button(
             btn_row,
             text="CANCEL",
             font=("Consolas", 9, "bold"),
@@ -1407,7 +1415,16 @@ class PingApp(tk.Tk):
             pady=6,
             cursor="hand2",
             command=modal.destroy
-        ).pack(side="left", padx=(8, 0))
+        )
+        cancel_btn.pack(side="left", padx=(8, 0))
+        
+        # Red hover effect for cancel button
+        def cancel_enter(e):
+            cancel_btn.config(fg=RED)
+        def cancel_leave(e):
+            cancel_btn.config(fg=TEXT_DIM)
+        cancel_btn.bind("<Enter>", cancel_enter)
+        cancel_btn.bind("<Leave>", cancel_leave)
 
         modal.bind("<Escape>", lambda _: modal.destroy())
 
@@ -1462,18 +1479,53 @@ class PingApp(tk.Tk):
                   relief="flat", bd=0, padx=6, pady=5, cursor="hand2",
                   command=self._toggle_settings).pack(side="left", padx=(0, 4))
 
-        tk.Button(right_hdr, text="ADD HOST",
+        # ADD HOST button with hover effect
+        add_host_btn = tk.Button(right_hdr, text="ADD HOST",
                   font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
                   activeforeground=BG, activebackground="#79b8ff",
                   relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
-                  command=self._toggle_add_host).pack(side="left", padx=(0, 8))
+                  command=self._toggle_add_host)
+        add_host_btn.pack(side="left", padx=(0, 8))
+        
+        # Hover effect for add host button
+        def add_host_enter(e):
+            add_host_btn.config(bg="#79b8ff")
+        def add_host_leave(e):
+            add_host_btn.config(bg=ACCENT)
+        add_host_btn.bind("<Enter>", add_host_enter)
+        add_host_btn.bind("<Leave>", add_host_leave)
 
+        # + BIO button with hover effect
+        bio_btn = tk.Button(right_hdr, text="+ BIO",
+                  font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
+                  activeforeground=BG, activebackground="#79b8ff",
+                  relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
+                  command=lambda: self.misc._open_add_misc_modal())
+        bio_btn.pack(side="left", padx=(0, 8))
+        
+        # Hover effect for bio button
+        def bio_enter(e):
+            bio_btn.config(bg="#79b8ff")
+        def bio_leave(e):
+            bio_btn.config(bg=ACCENT)
+        bio_btn.bind("<Enter>", bio_enter)
+        bio_btn.bind("<Leave>", bio_leave)
+
+        # PING ALL button with hover effect
         self.ping_all_btn = tk.Button(right_hdr, text="  PING ALL  ",
                   font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
                   activeforeground=BG, activebackground="#79b8ff",
                   relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
                   command=self._ping_all)
         self.ping_all_btn.pack(side="left")
+        
+        # Hover effect for ping all button
+        def ping_all_enter(e):
+            self.ping_all_btn.config(bg="#79b8ff")
+        def ping_all_leave(e):
+            self.ping_all_btn.config(bg=ACCENT)
+        self.ping_all_btn.bind("<Enter>", ping_all_enter)
+        self.ping_all_btn.bind("<Leave>", ping_all_leave)
 
         tk.Button(right_hdr, text="⛶",
                   font=("Consolas", 13), fg=TEXT_DIM, bg=BG,
@@ -1495,7 +1547,7 @@ class PingApp(tk.Tk):
                                   highlightbackground=BORDER, highlightthickness=1,
                                   padx=18, pady=10)
 
-        tk.Label(self.add_panel, text="ADD HOST",
+        tk.Label(self.add_panel, text="+ HOST",
                  font=("Consolas", 8, "bold"), fg=TEXT_DIM, bg=CARD_BG
                  ).pack(anchor="w", pady=(0, 5))
 

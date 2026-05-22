@@ -24,12 +24,6 @@
     "system_name": ""
   },
   {
-    "vm_name": "VM 05",
-    "ip": "",
-    "physical_name": "",
-    "system_name": ""
-  },
-  {
     "vm_name": "VM 06",
     "ip": "",
     "physical_name": "",
@@ -43,6 +37,18 @@
   },
   {
     "vm_name": "VM 08",
+    "ip": "",
+    "physical_name": "",
+    "system_name": ""
+  },
+  {
+    "vm_name": "VM 08",
+    "ip": "",
+    "physical_name": "",
+    "system_name": ""
+  },
+  {
+    "vm_name": "VM 09",
     "ip": "",
     "physical_name": "",
     "system_name": ""
