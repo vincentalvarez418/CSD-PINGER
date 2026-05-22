@@ -1,6 +1,18 @@
 import tkinter as tk
 from tkinter import ttk
 import subprocess, platform, re, threading, datetime, json, os, sys, csv
+from PIL import Image, ImageTk
+import ctypes
+
+
+
+DELETE_HOLD_MS = 2500
+DELETE_BAR_STEPS = 6
+DELETE_BAR_INTERVAL = DELETE_HOLD_MS // DELETE_BAR_STEPS
+
+def _asset(relative_path):
+    base = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, relative_path)
 
 # ── Constants ────────────────────────────────────────────────────
 PING_COUNT  = 10
@@ -88,8 +100,14 @@ def load_hosts():
 
 def save_hosts(hosts):
     try:
+        cleaned = []
+        for h in hosts:
+            entry = dict(h)
+            if entry.get("ip") == "0.0.0.0":
+                entry["ip"] = ""
+            cleaned.append(entry)
         with open(CONFIG_PATH, "w") as f:
-            json.dump(hosts, f, indent=2)
+            json.dump(cleaned, f, indent=2)
     except Exception:
         pass
     
@@ -235,6 +253,14 @@ class MiscRow(tk.Frame):
                                    font=("Consolas", 7, "bold"), fg=TEXT_DIM, bg=CARD_BG)
         self.status_lbl.pack(side="right")
 
+        dot_row = tk.Frame(self, bg=CARD_BG)
+        dot_row.pack(fill="x", pady=(3, 0))
+        self.dots = []
+        for _ in range(3):
+            d = tk.Label(dot_row, text="●", font=("Consolas", 7), fg=BORDER, bg=CARD_BG)
+            d.pack(side="left", padx=1)
+            self.dots.append(d)
+
     def _remove(self):
         self._stop_blink()
         self.sidebar.remove_row(self)
@@ -245,19 +271,27 @@ class MiscRow(tk.Frame):
             return
         self.dot.config(fg=YELLOW)
         self.status_lbl.config(text="...", fg=YELLOW)
+        for d in self.dots:
+            d.config(fg=BORDER)
+        def on_dot(idx, success):
+            # idx 0-2 → dot 0, idx 3-6 → dot 1, idx 7-9 → dot 2
+            slot = 0 if idx <= 2 else 1 if idx <= 6 else 2
+            self.after(0, self.dots[slot].config, {"fg": GREEN if success else RED})
         def run():
-            res = ping_host(ip, 10)
+            res = ping_host(ip, 10, dot_callback=on_dot)
             self.after(0, self._apply_result, res)
         threading.Thread(target=run, daemon=True).start()
 
     def _apply_result(self, res):
         status = res["status"]
         loss   = res["loss"]
+        recv   = res["recv"]
         if status in ("TIMEOUT", "UNREACHABLE", "DOWN", "ERROR"):
             self.status_lbl.config(text="DOWN", fg=RED)
+            for d in self.dots: d.config(fg=RED_DIM)
             self._start_blink(RED, BLINK_FAST)
-            log_event(f"{status} | loss={loss}%", self.entry.get("name", ""), 
-                      self.entry.get("ip", ""), f"sev=red_blink")
+            log_event(f"{status} | loss={loss}%", self.entry.get("name", ""),
+                      self.entry.get("ip", ""), "sev=red_blink")
         elif status == "EMPTY":
             self.status_lbl.config(text="—", fg=TEXT_DIM)
             self._stop_blink()
@@ -267,6 +301,9 @@ class MiscRow(tk.Frame):
             fg  = SEV_STYLE[sev][0]
             txt = "OK" if loss <= 1 else f"{loss}% loss"
             self.status_lbl.config(text=txt, fg=fg)
+            filled = 1 if recv <= 3 else 2 if recv <= 7 else 3
+            for i, d in enumerate(self.dots):
+                d.config(fg=fg if i < filled else RED_DIM)
             self._stop_blink()
             self.dot.config(fg=fg)
 
@@ -317,7 +354,7 @@ class MiscSidebar(tk.Frame):
         hdr = tk.Frame(self, bg=BG)
         hdr.pack(fill="x", pady=(0, 6))
 
-        tk.Label(hdr, text="MISC", font=("Consolas", 9, "bold"),
+        tk.Label(hdr, text="MISCELLANEOUS", font=("Consolas", 9, "bold"),
                  fg=TEXT_DIM, bg=BG).pack(side="left")
 
         tk.Button(hdr, text="⟳", font=("Consolas", 9),
@@ -326,8 +363,51 @@ class MiscSidebar(tk.Frame):
                   relief="flat", bd=0, cursor="hand2",
                   command=self._ping_all).pack(side="right")
 
-        self.list_frame = tk.Frame(self, bg=BG)
-        self.list_frame.pack(fill="both", expand=True)
+        scroll_wrap = tk.Frame(self, bg=BG)
+        scroll_wrap.pack(fill="both", expand=True)
+
+        self.canvas = tk.Canvas(
+            scroll_wrap,
+            bg=BG,
+            highlightthickness=0
+        )
+
+        self.canvas.configure(yscrollcommand=lambda *args: None)
+
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+        # Inner frame
+        self.list_frame = tk.Frame(self.canvas, bg=BG)
+
+        self.canvas_window = self.canvas.create_window(
+            (0, 0),
+            window=self.list_frame,
+            anchor="nw"
+        )
+
+        self.list_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(
+                scrollregion=self.canvas.bbox("all")
+            )
+        )
+
+        self.canvas.bind(
+            "<Configure>",
+            lambda e: self.canvas.itemconfig(
+                self.canvas_window,
+                width=e.width
+            )
+        )
+
+        # Mousewheel
+        self.canvas.bind(
+            "<MouseWheel>",
+            lambda e: self.canvas.yview_scroll(
+                int(-1 * (e.delta / 120)),
+                "units"
+            )
+        )
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", pady=(8, 6))
 
@@ -336,13 +416,13 @@ class MiscSidebar(tk.Frame):
         toggle_row = tk.Frame(self, bg=BG)
         toggle_row.pack(fill="x")
         self._toggle_btn = tk.Button(
-            toggle_row, text="+ ADD HOST",
+            toggle_row, text="+ ADD MISCELLANEOUS HOST",
             font=("Consolas", 8, "bold"),
             fg=TEXT_DIM, bg=BG,
             activeforeground=ACCENT, activebackground=BG,
             relief="flat", bd=0, cursor="hand2",
             anchor="w",
-            command=self._toggle_add_panel)
+            command=self._open_add_misc_modal)
         self._toggle_btn.pack(side="left", fill="x", expand=True)
 
         # Collapsible add panel
@@ -441,9 +521,229 @@ class MiscSidebar(tk.Frame):
         for r in self.rows:
             r.ping_now()
 
+    def _open_add_misc_modal(self):
+        modal = tk.Toplevel(self)
+        modal.title("")
+        modal.configure(bg=BG)
+        modal.resizable(False, False)
+        modal.transient(self.winfo_toplevel())
+        modal.grab_set()
+        self.after(100, lambda: self.winfo_toplevel()._dark_titlebar_for(modal))
+
+        # Center modal
+        root = self.winfo_toplevel()
+        root.update_idletasks()
+
+        w, h = 560, 320
+        x = root.winfo_rootx() + (root.winfo_width() - w) // 2
+        y = root.winfo_rooty() + (root.winfo_height() - h) // 2
+
+        modal.geometry(f"{w}x{h}+{x}+{y}")
+
+        # Border
+        modal.configure(highlightbackground=ACCENT, highlightthickness=1)
+
+        card = tk.Frame(
+            modal,
+            bg=CARD_BG,
+            padx=16,
+            pady=14
+        )
+        card.pack(fill="both", expand=True)
+
+        # Title
+        tk.Label(
+            card,
+            text="ADD MISCELLANEOUS HOST",
+            font=("Consolas", 10, "bold"),
+            fg=TEXT,
+            bg=CARD_BG
+        ).pack(anchor="w")
+
+        tk.Frame(card, bg=ACCENT, height=2).pack(fill="x", pady=(10, 14))
+
+        # Name
+        tk.Label(
+            card,
+            text="NAME",
+            font=("Consolas", 8, "bold"),
+            fg=TEXT_DIM,
+            bg=CARD_BG
+        ).pack(anchor="w")
+
+        name_var = tk.StringVar()
+
+        name_wrap = tk.Frame(card, bg=CARD_BG)
+        name_wrap.pack(fill="x", pady=(4, 12))
+
+        name_e = tk.Entry(
+            name_wrap,
+            textvariable=name_var,
+            font=("Consolas", 10),
+            fg=TEXT,
+            bg=CARD_BG,
+            insertbackground=TEXT,
+            relief="flat",
+            bd=0,
+            highlightthickness=0
+        )
+        name_e.pack(fill="x", ipady=7)
+
+        tk.Frame(name_wrap, bg=BORDER, height=1).pack(fill="x", pady=(2, 0))
+
+        # IP
+        tk.Label(
+            card,
+            text="IP ADDRESS",
+            font=("Consolas", 8, "bold"),
+            fg=TEXT_DIM,
+            bg=CARD_BG
+        ).pack(anchor="w")
+
+        ip_var = tk.StringVar()
+
+        ip_wrap = tk.Frame(card, bg=CARD_BG)
+        ip_wrap.pack(fill="x", pady=(4, 14))
+
+        ip_e = tk.Entry(
+            ip_wrap,
+            textvariable=ip_var,
+            font=("Consolas", 10),
+            fg=TEXT,
+            bg=CARD_BG,
+            insertbackground=TEXT,
+            relief="flat",
+            bd=0,
+            highlightthickness=0
+        )
+        ip_e.pack(fill="x", ipady=7)
+
+        tk.Frame(ip_wrap, bg=BORDER, height=1).pack(fill="x", pady=(2, 0))
+
+        msg = tk.Label(
+            card,
+            text="",
+            font=("Consolas", 7),
+            fg=TEXT_DIM,
+            bg=CARD_BG
+        )
+        msg.pack(anchor="w")
+
+        btn_row = tk.Frame(card, bg=CARD_BG)
+        btn_row.pack(fill="x", pady=(12, 0))
+
+        def do_add():
+            name = name_var.get().strip()
+            ip   = ip_var.get().strip()
+
+            if not name:
+                msg.config(text="Need a name", fg=YELLOW)
+                return
+
+            if not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip):
+                msg.config(text="Invalid IP", fg=RED)
+                return
+
+            self._create_row({
+                "name": name,
+                "ip": ip
+            })
+
+            self._save()
+
+            modal.destroy()
+
+        tk.Button(
+            btn_row,
+            text="+ ADD",
+            font=("Consolas", 9, "bold"),
+            fg=BG,
+            bg=ACCENT,
+            activeforeground=BG,
+            activebackground="#79b8ff",
+            relief="flat",
+            bd=0,
+            padx=12,
+            pady=5,
+            cursor="hand2",
+            command=do_add
+        ).pack(side="left")
+
+        tk.Button(
+            btn_row,
+            text="CANCEL",
+            font=("Consolas", 9, "bold"),
+            fg=TEXT_DIM,
+            bg=CARD_BG,
+            activeforeground=TEXT,
+            activebackground=BORDER,
+            relief="flat",
+            bd=0,
+            padx=12,
+            pady=5,
+            cursor="hand2",
+            command=modal.destroy
+        ).pack(side="left", padx=(8, 0))
+
+        name_e.focus_set()
+
+        modal.bind("<Escape>", lambda _: modal.destroy())
 
 # ── Host Card ────────────────────────────────────────────────────
 class HostCard(tk.Frame):
+
+    def _bind_right_hold(self, widget):
+        if isinstance(widget, (tk.Frame, tk.Label, tk.Canvas)):
+            widget.bind("<ButtonPress-3>", self._rc_press)
+            widget.bind("<ButtonRelease-3>", self._rc_release)
+        for child in widget.winfo_children():
+            self._bind_right_hold(child)
+
+    def _cancel_hold(self):
+        if getattr(self, "_rc_job", None):
+            self.after_cancel(self._rc_job)
+            self._rc_job = None
+        self._rc_step = 0
+
+    def _rc_press(self, _=None):
+        if not self.host.get("ip") and not self.host.get("vm_name"):
+            return
+        self._cancel_hold()
+        self._rc_step = 0
+        self._rc_active = True
+        self._last_ts = getattr(self, "_last_ts", "—")
+        self.badge.config(text=" DELETING ", fg=RED, bg=RED_DIM)
+        self.badge_frame.config(bg=RED_DIM)
+        self.ts_lbl.config(text="▓" * 0 + "░" * DELETE_BAR_STEPS, fg=RED)
+        self._rc_tick()
+
+    def _rc_tick(self):
+        if not getattr(self, "_rc_active", False):
+            return
+        self._rc_step += 1
+        bar = "▓" * self._rc_step + "░" * (DELETE_BAR_STEPS - self._rc_step)
+        self.ts_lbl.config(text=bar, fg=RED)
+
+        if self._rc_step >= DELETE_BAR_STEPS:
+            self._rc_job = None
+            self._rc_fire()
+        else:
+            self._rc_job = self.after(DELETE_BAR_INTERVAL, self._rc_tick)
+
+    def _rc_release(self, _=None):
+        if getattr(self, "_rc_job", None):
+            self.after_cancel(self._rc_job)
+            self._rc_job = None
+        self._rc_active = False
+        self.ts_lbl.config(text=getattr(self, "_last_ts", "—"), fg=TEXT_DIM)
+        self.badge.config(text=" IDLE ", fg=ACCENT, bg=ACCENT_DIM)
+        self.badge_frame.config(bg=ACCENT_DIM)
+
+    def _rc_fire(self):
+        self._rc_active = False
+        self.ts_lbl.config(text="DELETING", fg=RED)
+        self.after(50, lambda: self.app._remove_card(self))
+
     def __init__(self, parent, host, app, **kw):
         super().__init__(parent, bg=CARD_BG, **kw)
         self.host = dict(host)
@@ -454,6 +754,9 @@ class HostCard(tk.Frame):
         self.configure(highlightbackground=BORDER, highlightthickness=1, padx=12, pady=18)
         self._build()
         self.after(50, self._apply_dim)
+        self._rc_job = None
+        self._rc_step = 0
+        self._rc_active = False
 
     def _is_unconfigured(self):
         vm  = (self.host.get("vm_name") or "").strip()
@@ -593,12 +896,11 @@ class HostCard(tk.Frame):
 
         bot = tk.Frame(self, bg=CARD_BG)
         bot.pack(fill="x", pady=(3, 0))
-        tk.Button(bot, text="PING", font=("Consolas", 8, "bold"),
-                  fg=BG, bg=ACCENT, activeforeground=BG, activebackground="#79b8ff",
-                  relief="flat", bd=0, padx=8, pady=3, cursor="hand2",
-                  command=self._ping_single).pack(side="left")
         self.ts_lbl = tk.Label(bot, text="—", font=("Consolas", 7), fg=TEXT_DIM, bg=CARD_BG)
         self.ts_lbl.pack(side="right")
+        self._lp_job = None
+        self._bind_long_press(self)
+        self._bind_right_hold(self)
 
     def _ip_focus_in(self, _=None):
         if self.ip_var.get() in ("Enter IP…", "0.0.0.0") and not self.host.get("ip"):
@@ -664,14 +966,18 @@ class HostCard(tk.Frame):
 
     def _tint_children(self, color):
         for w in self.winfo_children():
+            if isinstance(w, tk.Button): continue
             try: w.configure(bg=color)
             except Exception: pass
             for ww in w.winfo_children():
+                if isinstance(ww, tk.Button): continue
                 try: ww.configure(bg=color)
                 except Exception: pass
                 for www in ww.winfo_children():
+                    if isinstance(www, tk.Button): continue
                     try: www.configure(bg=color)
                     except Exception: pass
+
 
     def _ping_single(self):
         if not self.host.get("ip"):
@@ -754,7 +1060,7 @@ class HostCard(tk.Frame):
 
         for i, d in enumerate(self.dots):
             d.config(fg=fg if i < recv else RED_DIM)
-
+        self._last_ts = f"checked {now}"
         self.ts_lbl.config(text=f"checked {now}")
 
         if should_log(sev):
@@ -762,6 +1068,51 @@ class HostCard(tk.Frame):
             diag = f"avg={avg}, recv={recv}/{PING_COUNT}, sev={sev}"
             log_event(what, self.host.get("vm_name", ""), self.host.get("ip", ""), diag)
 
+    def _bind_long_press(self, widget):
+            # Only bind on non-interactive widgets to avoid blocking text entry
+            if isinstance(widget, (tk.Frame, tk.Label, tk.Canvas)):
+                widget.bind("<ButtonPress-1>",   self._lp_press)
+                widget.bind("<ButtonRelease-1>", self._lp_release)
+            for child in widget.winfo_children():
+                self._bind_long_press(child)
+
+    def _lp_press(self, _=None):
+        if not self.host.get("ip"):
+            return
+        self._last_badge = self.badge.cget("text")
+        self._last_badge_fg = self.badge.cget("fg")
+        self._last_badge_bg = self.badge.cget("bg")
+        self.badge.config(text=" RESETTING ", fg=ACCENT, bg=ACCENT_DIM)
+        self.badge_frame.config(bg=ACCENT_DIM)
+        self._lp_step = 0
+        self._lp_tick()
+
+    def _lp_tick(self):
+        steps = 6
+        interval = 2500  // steps   # 100 ms per step
+        self._lp_step += 1
+        bar = "▓" * self._lp_step + "░" * (steps - self._lp_step)
+        self.ts_lbl.config(text=bar, fg=ACCENT)
+        if self._lp_step >= steps:
+            self._lp_job = None
+            self._lp_fire()
+        else:
+            self._lp_job = self.after(interval, self._lp_tick)
+
+    def _lp_release(self, _=None):
+        if hasattr(self, "_lp_job") and self._lp_job:
+            self.after_cancel(self._lp_job)
+            self._lp_job = None
+            self.ts_lbl.config(text=self._last_ts if hasattr(self, "_last_ts") else "—", fg=TEXT_DIM)
+            self.badge.config(text=self._last_badge, fg=self._last_badge_fg, bg=self._last_badge_bg)
+            self.badge_frame.config(bg=self._last_badge_bg)
+
+    def _lp_fire(self):
+        self._lp_job = None
+        self.ts_lbl.config(text=self._last_ts if hasattr(self, "_last_ts") else "—", fg=TEXT_DIM)
+        self.badge.config(text="  COMPLETE  ", fg=ACCENT, bg=ACCENT_DIM)
+        self.badge_frame.config(bg=ACCENT_DIM)
+        self.after(2000, self._ping_single)
 
 # ── Scrollable Frame ─────────────────────────────────────────────
 class ScrollableFrame(tk.Frame):
@@ -804,6 +1155,52 @@ class ScrollableFrame(tk.Frame):
 # ── Main App ─────────────────────────────────────────────────────
 class PingApp(tk.Tk):
 
+    def _remove_card(self, card):
+        if card not in self.cards:
+            return
+
+        card._stop_blink()
+        card._cancel_hold()
+        card.grid_forget()
+        self.cards.remove(card)
+
+        for w in self.grid_f.winfo_children():
+            w.grid_forget()
+
+        for i, c in enumerate(self.cards):
+            r, col = divmod(i, 3)
+            pad_l = (0, 5) if col == 0 else (5, 5) if col == 1 else (5, 0)
+            c.grid(row=r, column=col, sticky="nsew", padx=pad_l, pady=(0, 10))
+
+        save_hosts([c.host for c in self.cards])
+        self._set_status(f"Deleted {card.host.get('vm_name', '')}", RED)
+
+
+    def _dark_titlebar_for(self, win):
+        try:
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+            hwnd = ctypes.windll.user32.GetParent(win.winfo_id())
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                hwnd,
+                DWMWA_USE_IMMERSIVE_DARK_MODE,
+                ctypes.byref(ctypes.c_int(1)),
+                ctypes.sizeof(ctypes.c_int)
+            )
+        except Exception:
+            pass
+
+    def _dark_titlebar(self):
+        try:
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                ctypes.windll.user32.GetForegroundWindow(),
+                DWMWA_USE_IMMERSIVE_DARK_MODE,
+                ctypes.byref(ctypes.c_int(1)),
+                ctypes.sizeof(ctypes.c_int)
+            )
+        except Exception:
+            pass
+
     def _defocus(self, event):
         widget = event.widget
         if isinstance(widget, (tk.Frame, tk.Canvas, tk.Label)):
@@ -811,16 +1208,23 @@ class PingApp(tk.Tk):
 
     def __init__(self):
         super().__init__()
-        self.title("CSD NETWORK MONITOR")
+        self.title("CSD NM")
         self.configure(bg=BG)
         self.geometry("1200x760")
         self.resizable(True, True)
+        try:
+            img = Image.open(_asset("assets/images/icon.png"))
+            self._win_icon = ImageTk.PhotoImage(img)
+            self.iconphoto(True, self._win_icon)
+        except Exception:
+            pass
         self._auto_job     = None
         self._running      = False
         self._interval_idx = 1
         self.cards         = []
         self._hosts_data   = load_hosts()
         self._build_ui()
+        self.after(100, self._dark_titlebar)
         self.after(500, self._ping_all)
 
     @property
@@ -832,12 +1236,180 @@ class PingApp(tk.Tk):
         return INTERVAL_CYCLE[self._interval_idx][0]
 
     def _toggle_add_host(self):
-        if self._add_visible:
-            self.add_panel.pack_forget()
-            self._add_visible = False
-        else:
-            self.add_panel.pack(fill="x", padx=14, pady=(0, 8))
-            self._add_visible = True
+        self._open_add_host_modal()
+
+    def _open_add_host_modal(self):
+        modal = tk.Toplevel(self)
+        modal.title("")
+        modal.configure(bg=BG)
+        modal.resizable(False, False)
+        modal.transient(self)
+        modal.grab_set()
+
+        modal.update_idletasks()
+        w, h = 560, 290
+        x = self.winfo_rootx() + (self.winfo_width() - w) // 2
+        y = self.winfo_rooty() + (self.winfo_height() - h) // 2
+        modal.geometry(f"{w}x{h}+{x}+{y}")
+        modal.configure(highlightbackground=ACCENT, highlightthickness=1)
+        self.after(100, lambda: self._dark_titlebar_for(modal))
+
+        card = tk.Frame(modal, bg=CARD_BG, padx=18, pady=16)
+        card.pack(fill="both", expand=True)
+
+        top = tk.Frame(card, bg=CARD_BG)
+        top.pack(fill="x")
+
+        tk.Label(
+            top,
+            text="ADD HOST",
+            font=("Consolas", 10, "bold"),
+            fg=TEXT,
+            bg=CARD_BG
+        ).pack(side="left")
+
+        tk.Label(
+            top,
+            text="",
+            font=("Consolas", 8),
+            fg=TEXT_DIM,
+            bg=CARD_BG
+        ).pack(side="right")
+
+        tk.Frame(card, bg=ACCENT, height=2).pack(fill="x", pady=(10, 14))
+
+        form = tk.Frame(card, bg=CARD_BG)
+        form.pack(fill="x")
+
+        fields = [
+            ("VM Name", 14),
+            ("IP", 14),
+            ("Physical Name", 16),
+            ("System", 16),
+        ]
+
+        _vars = []
+
+        for r, (label_text, width) in enumerate(fields):
+            row = tk.Frame(form, bg=CARD_BG)
+            row.pack(fill="x", pady=(0, 10))
+
+            tk.Label(
+                row,
+                text=label_text,
+                font=("Consolas", 8, "bold"),
+                fg=TEXT_DIM,
+                bg=CARD_BG,
+                width=14,
+                anchor="w"
+            ).pack(side="left")
+
+            box = tk.Frame(
+                row,
+                bg=BORDER,
+                padx=6,
+                pady=1
+            )
+
+            e = self._ph_entry(box, label_text, width)
+
+            e.configure(
+                bg=BG,
+                fg=TEXT,
+                insertbackground=TEXT,
+                relief="flat",
+                bd=0,
+                highlightthickness=0
+            )
+
+            e.pack(fill="both", expand=True)
+
+            box.pack(
+                side="left",
+                fill="x",
+                expand=True,
+                padx=(0, 6),
+                ipady=5
+            )
+            _vars.append((e, label_text))
+
+        msg_lbl = tk.Label(card, text="", font=("Consolas", 7), fg=TEXT_DIM, bg=CARD_BG)
+        msg_lbl.pack(anchor="w", pady=(4, 0))
+
+        btn_row = tk.Frame(card, bg=CARD_BG)
+        btn_row.pack(fill="x", pady=(16, 0))
+
+        def do_add():
+            vals = [e.get().strip() for e, ph in _vars]
+            defaults = [ph for _, ph in _vars]
+
+            vm, ip, phys, sys_n = [
+                "" if v == defaults[i] else v
+                for i, v in enumerate(vals)
+            ]
+
+            if not vm:
+                vm = f"VM {len(self.cards) + 1:02d}"
+
+            if ip and not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip):
+                msg_lbl.config(text="Invalid IP format", fg=RED)
+                return
+
+            host = {
+                "vm_name": vm,
+                "ip": ip,
+                "physical_name": phys,
+                "system_name": sys_n,
+            }
+
+            self._add_card(host, len(self.cards))
+            save_hosts([c.host for c in self.cards])
+
+            self.after(
+                100,
+                lambda: self.scroll.canvas.yview_moveto(1.0)
+            )
+
+            self._set_status(
+                f"Added {host['vm_name']} ({ip or 'no IP'})",
+                GREEN
+            )
+
+            modal.destroy()
+
+        tk.Button(
+            btn_row,
+            text="+ ADD",
+            font=("Consolas", 9, "bold"),
+            fg=BG,
+            bg=ACCENT,
+            activeforeground=BG,
+            activebackground="#79b8ff",
+            relief="flat",
+            bd=0,
+            padx=14,
+            pady=6,
+            cursor="hand2",
+            command=do_add
+        ).pack(side="left")
+
+        tk.Button(
+            btn_row,
+            text="CANCEL",
+            font=("Consolas", 9, "bold"),
+            fg=TEXT_DIM,
+            bg=CARD_BG,
+            activeforeground=TEXT,
+            activebackground=BORDER,
+            relief="flat",
+            bd=0,
+            padx=14,
+            pady=6,
+            cursor="hand2",
+            command=modal.destroy
+        ).pack(side="left", padx=(8, 0))
+
+        modal.bind("<Escape>", lambda _: modal.destroy())
 
     def _build_ui(self):
         # ── Header ──
@@ -846,7 +1418,15 @@ class PingApp(tk.Tk):
 
         left_hdr = tk.Frame(hdr, bg=BG)
         left_hdr.pack(side="left")
-        tk.Label(left_hdr, text="◉  CSD NETWORK MONITOR",
+
+        try:
+            _img = Image.open(_asset("assets/images/icon.png")).resize((32, 32), Image.LANCZOS)
+            self._header_icon = ImageTk.PhotoImage(_img)
+            tk.Label(left_hdr, image=self._header_icon, bg=BG).pack(side="left", padx=(0, 8))
+        except Exception:
+            pass
+
+        tk.Label(left_hdr, text="CSD NETWORK OPERATION PANEL",
                  font=("Consolas", 15, "bold"), fg=TEXT, bg=BG).pack(anchor="w")
         self.status_lbl = tk.Label(left_hdr, text="Initializing…",
                                    font=("Consolas", 8), fg=TEXT_DIM, bg=BG)
@@ -882,17 +1462,18 @@ class PingApp(tk.Tk):
                   relief="flat", bd=0, padx=6, pady=5, cursor="hand2",
                   command=self._toggle_settings).pack(side="left", padx=(0, 4))
 
-        tk.Button(right_hdr, text="+ HOST",
+        tk.Button(right_hdr, text="ADD HOST",
                   font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
                   activeforeground=BG, activebackground="#79b8ff",
                   relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
                   command=self._toggle_add_host).pack(side="left", padx=(0, 8))
 
-        tk.Button(right_hdr, text="  PING ALL  ",
+        self.ping_all_btn = tk.Button(right_hdr, text="  PING ALL  ",
                   font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
                   activeforeground=BG, activebackground="#79b8ff",
                   relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
-                  command=self._ping_all).pack(side="left")
+                  command=self._ping_all)
+        self.ping_all_btn.pack(side="left")
 
         tk.Button(right_hdr, text="⛶",
                   font=("Consolas", 13), fg=TEXT_DIM, bg=BG,
@@ -920,7 +1501,7 @@ class PingApp(tk.Tk):
 
         add_row = tk.Frame(self.add_panel, bg=CARD_BG)
         add_row.pack(fill="x")
-        fields = [("VM Name", 14), ("IP", 14), ("Physical Name", 16), ("System", 16)]
+        fields = [("VM Name", 14), ("IP", 14), ("Physical Name", 16), ("System Name", 16)]
         self._add_vars = []
         for ph, w in fields:
             e = self._ph_entry(add_row, ph, w)
@@ -971,15 +1552,17 @@ class PingApp(tk.Tk):
         self._refresh_interval_buttons()
 
     def _ph_entry(self, parent, placeholder, width):
-        var = tk.StringVar(value=placeholder)
-        e = tk.Entry(parent, textvariable=var, font=("Consolas", 9),
-                     fg=TEXT_DIM, bg=BG, insertbackground=TEXT,
-                     relief="flat", highlightbackground=BORDER,
-                     highlightthickness=1, width=width)
-        e.bind("<FocusIn>",  lambda ev, v=var, p=placeholder, w=e:
-               (v.set(""), w.config(fg=TEXT)) if v.get() == p else None)
-        e.bind("<FocusOut>", lambda ev, v=var, p=placeholder, w=e:
-               (v.set(p), w.config(fg=TEXT_DIM)) if not v.get() else None)
+        e = tk.Entry(
+            parent,
+            font=("Consolas", 9),
+            fg=TEXT,
+            bg=BG,
+            insertbackground=TEXT,
+            relief="flat",
+            highlightbackground=BORDER,
+            highlightthickness=1,
+            width=width
+        )
         return e
 
     def _add_card(self, host, idx):
@@ -1019,9 +1602,11 @@ class PingApp(tk.Tk):
         if not active:
             return
         self._running = True
+        self.ping_all_btn.config(state="disabled", bg=BORDER, fg=TEXT_DIM, cursor="")
         self._set_status("Pinging all hosts…", YELLOW)
         for c in active:
             c.set_pinging()
+        self.misc._ping_all()
         threading.Thread(target=self._ping_thread, args=(active,), daemon=True).start()
 
     def _ping_thread(self, cards):
@@ -1041,11 +1626,11 @@ class PingApp(tk.Tk):
 
     def _ping_done(self):
         self._running = False
+        self.ping_all_btn.config(state="normal", bg=ACCENT, fg=BG, cursor="hand2")
         now = datetime.datetime.now().strftime("%H:%M:%S")
         self._set_status(f"Last run: {now}", TEXT_DIM)
         if os.path.exists(LOG_PATH):
             self.log_lbl.config(text="📋 log", fg=ORANGE)
-        self.misc._ping_all() 
 
     def _toggle_settings(self):
         if self._settings_visible:
