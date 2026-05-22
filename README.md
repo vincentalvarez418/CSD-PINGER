@@ -8,5 +8,5 @@
 <h1 align="center">CSD PINGER</h1>
 
 <p align="center">
-  Official branch of the CSD Network Monitoring & Operations Panel
+  Version 2 with revisions
 </p>
