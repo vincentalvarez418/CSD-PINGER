@@ -1,48 +1,61 @@
 [
   {
-    "vm_name": "ETRACS",
+    "vm_name": "ETRACS SERVER",
     "ip": "192.168.1.190",
     "physical_name": "",
-    "system_name": ""
+    "system_name": "",
+    "protocol": "PING"
   },
   {
-    "vm_name": "TEST ERROR",
+    "vm_name": "PORTRAINER",
     "ip": "192.168.1.43",
     "physical_name": "",
-    "system_name": ""
+    "system_name": "",
+    "protocol": "PING"
   },
   {
-    "vm_name": "sdsd",
-    "ip": "192.168.1.190",
+    "vm_name": "ETRACS DB",
+    "ip": "192.168.1.74",
     "physical_name": "",
-    "system_name": ""
+    "system_name": "",
+    "advanced": false,
+    "protocol": "PING"
   },
   {
     "vm_name": "VM 04",
     "ip": "192.168.1.55",
     "physical_name": "",
-    "system_name": ""
+    "system_name": "",
+    "protocol": "PING"
   },
   {
     "vm_name": "VM 05",
+    "ip": "192.685.4.6",
+    "physical_name": "",
+    "system_name": "",
+    "protocol": "PING"
+  },
+  {
+    "vm_name": "VM 09",
     "ip": "",
     "physical_name": "",
     "system_name": ""
   },
   {
-    "vm_name": "VM 06",
-    "ip": "",
+    "vm_name": "VM 09",
+    "ip": "192.168.1.138",
     "physical_name": "",
     "system_name": ""
   },
   {
-    "vm_name": "VM 07",
-    "ip": "",
+    "vm_name": "VM 10",
+    "ip": "192.168.1.137",
     "physical_name": "",
-    "system_name": ""
+    "system_name": "",
+    "protocol": "PING"
   },
   {
-    "vm_name": "VM 08",
+    "vm_name": "VM 11",
     "ip": "",
     "physical_name": "",
     "system_name": ""

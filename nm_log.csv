@@ -278,3 +278,48 @@ timestamp,what,server,ip,diagnostic
 2026-05-22 08:44:04,TIMEOUT | loss=100%,asdas,19.65.78.5,sev=red_blink
 2026-05-22 08:47:35,UNREACHABLE | loss=80%,asdas,19.65.78.5,sev=red_blink
 2026-05-22 08:47:36,UNREACHABLE | loss=80%,asdas,19.65.78.5,sev=red_blink
+2026-05-22 10:39:09,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 10:39:11,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 11:10:24,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 11:14:32,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 11:15:11,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 11:16:57,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 11:19:10,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 11:29:42,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:19:30,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:20:48,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:24:51,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:25:38,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:31:11,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:32:19,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:33:57,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:35:18,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:37:50,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:38:13,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:39:41,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:39:41,TIMEOUT | loss=100%,VM 10,https://zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:41:29,TIMEOUT | loss=100%,VM 10,https://zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:41:29,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:41:52,TIMEOUT | loss=100%,scscs,492.568.595.54,sev=red_blink
+2026-05-22 13:42:31,TIMEOUT | loss=100%,scscs,492.568.595.54,sev=red_blink
+2026-05-22 13:42:31,TIMEOUT | loss=100%,VM 10,https://zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:42:31,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:42:32,TIMEOUT | loss=100%,VM 09,192.168.1.137,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:42:36,TIMEOUT | loss=100%,VM 09,192.168.1.137,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:42:37,TIMEOUT | loss=100%,VM 09,192.168.1.137,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:42:43,TIMEOUT | loss=100%,scscs,492.568.595.54,sev=red_blink
+2026-05-22 13:42:43,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:42:43,TIMEOUT | loss=100%,VM 10,https://zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:43:05,TIMEOUT | loss=100%,scscs,492.568.595.54,sev=red_blink
+2026-05-22 13:43:05,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:43:05,TIMEOUT | loss=100%,VM 10,https://zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:46:17,TIMEOUT | loss=100%,scscs,492.568.595.54,sev=red_blink
+2026-05-22 13:46:17,TIMEOUT | loss=100%,scscs,492.568.595.54,sev=red_blink
+2026-05-22 13:46:17,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:46:37,TIMEOUT | loss=100%,scscs,492.568.595.54,sev=red_blink
+2026-05-22 13:46:37,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:47:36,TIMEOUT | loss=100%,VM 09,192.168.1.138,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:47:37,TIMEOUT | loss=100%,VM 09,192.168.1.138,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:47:41,TIMEOUT | loss=100%,scscs,492.568.595.54,sev=red_blink
+2026-05-22 13:47:41,TIMEOUT | loss=100%,VM 05,192.685.4.6,"avg=—, recv=0/10, sev=red_blink"
+2026-05-22 13:47:55,TIMEOUT | loss=100%,VM 09,192.168.1.138,"avg=—, recv=0/10, sev=red_blink"

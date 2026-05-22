@@ -191,6 +191,94 @@ def ping_host(ip, count, dot_callback=None):
     return {"status": status, "loss": loss, "avg": avg_ms, "recv": recv}
 
 
+# ── TCP Check ───────────────────────────────────────────────────
+def check_tcp_target(target):
+    """Check if target:port is valid."""
+    if ':' not in target:
+        return False
+    parts = target.rsplit(':', 1)
+    if len(parts) != 2:
+        return False
+    host, port_str = parts
+    try:
+        port = int(port_str)
+        if port < 1 or port > 65535:
+            return False
+    except ValueError:
+        return False
+    if not (re.match(r'^\d{1,3}(\.\d{1,3}){3}$', host) or re.match(r'^[a-zA-Z0-9.-]+$', host)):
+        return False
+    return True
+
+
+def tcp_check(target, timeout=3):
+    """Perform TCP check on target:port."""
+    import socket
+    if ':' not in target:
+        return {"status": "ERROR", "loss": 100, "avg": "—", "recv": 0}
+    parts = target.rsplit(':', 1)
+    host, port_str = parts
+    try:
+        port = int(port_str)
+    except ValueError:
+        return {"status": "ERROR", "loss": 100, "avg": "—", "recv": 0}
+    start = datetime.datetime.now()
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        result = sock.connect_ex((host, port))
+        sock.close()
+        elapsed = (datetime.datetime.now() - start).total_seconds() * 1000
+        if result == 0:
+            return {"status": "UP", "loss": 0, "avg": f"{int(elapsed)} ms", "recv": 1}
+        else:
+            return {"status": "DOWN", "loss": 100, "avg": "—", "recv": 0}
+    except Exception:
+        return {"status": "ERROR", "loss": 100, "avg": "—", "recv": 0}
+
+
+# ── HTTP Check ──────────────────────────────────────────────────
+def check_http_target(target):
+    """Validate HTTP target format."""
+    if not target.lower().startswith(("http://", "https://")):
+        return False
+    try:
+        import urllib.parse
+        urllib.parse.urlparse(target)
+        return True
+    except Exception:
+        return False
+
+
+def http_check(target, timeout=5):
+    """Perform HTTP check on target URL."""
+    import urllib.request
+    import urllib.error
+    start = datetime.datetime.now()
+    try:
+        req = urllib.request.Request(target, headers={'User-Agent': 'CSD-Monitor'})
+        response = urllib.request.urlopen(req, timeout=timeout)
+        elapsed = (datetime.datetime.now() - start).total_seconds() * 1000
+        if response.status == 200:
+            return {"status": "UP", "loss": 0, "avg": f"{int(elapsed)} ms", "recv": 1}
+        else:
+            return {"status": "DOWN", "loss": 100, "avg": "—", "recv": 0}
+    except urllib.error.HTTPError as e:
+        elapsed = (datetime.datetime.now() - start).total_seconds() * 1000
+        return {"status": "UP", "loss": 0, "avg": f"{int(elapsed)} ms", "recv": 1}
+    except Exception:
+        return {"status": "DOWN", "loss": 100, "avg": "—", "recv": 0}
+
+
+# ── Validation helpers ──────────────────────────────────────────
+def validate_hostname_or_ip(target):
+    """Validate hostname or IPv4 address."""
+    if re.match(r'^\d{1,3}(\.\d{1,3}){3}$', target):
+        return True
+    if re.match(r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$', target):
+        return True
+    return False
+
 # ── Misc Sidebar Row ─────────────────────────────────────────────
 class MiscRow(tk.Frame):
     def __init__(self, parent, entry, sidebar, **kw):
