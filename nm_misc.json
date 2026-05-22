@@ -1,14 +1,54 @@
 [
   {
-    "name": "BIOMETRIsddasdC",
-    "ip": "192.168.1.98"
+    "name": "SECRETARY",
+    "ip": "192.168.1.163"
   },
   {
-    "name": "YOASI",
-    "ip": "192.168.1.190"
+    "name": "TREASURER",
+    "ip": "192.168.1.164"
   },
   {
-    "name": "dsdsd",
-    "ip": "019.528.65.1"
+    "name": "BUDGET",
+    "ip": "192.168.1.165"
+  },
+  {
+    "name": "ASSESSOR",
+    "ip": "192.168.24.233"
+  },
+  {
+    "name": "LEGAL",
+    "ip": "192.168.23.248"
+  },
+  {
+    "name": "ACCOUNTING",
+    "ip": "192.168.1.162"
+  },
+  {
+    "name": "ENGINEERS",
+    "ip": "192.168.26.24"
+  },
+  {
+    "name": "PLANNING",
+    "ip": "192.168.19.246"
+  },
+  {
+    "name": "INTERNAL AUDIT",
+    "ip": "192.168.24.250"
+  },
+  {
+    "name": "ADMIN",
+    "ip": "192.168.24.232"
+  },
+  {
+    "name": "LATINO",
+    "ip": "192.168.19.227"
+  },
+  {
+    "name": "ANNEX",
+    "ip": "192.168.1.230"
+  },
+  {
+    "name": "BOSS BUILDING",
+    "ip": "192.168.39.2"
   }
 ]

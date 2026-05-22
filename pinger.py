@@ -376,14 +376,12 @@ class MiscSidebar(tk.Frame):
         scroll_wrap = tk.Frame(self, bg=BG)
         scroll_wrap.pack(fill="both", expand=True)
 
+        # Canvas without the scrollbar attachment
         self.canvas = tk.Canvas(
             scroll_wrap,
             bg=BG,
             highlightthickness=0
         )
-
-        self.canvas.configure(yscrollcommand=lambda *args: None)
-
         self.canvas.pack(side="left", fill="both", expand=True)
 
         # Inner frame
@@ -395,6 +393,7 @@ class MiscSidebar(tk.Frame):
             anchor="nw"
         )
 
+        # Update scrollregion automatically when items are added/removed
         self.list_frame.bind(
             "<Configure>",
             lambda e: self.canvas.configure(
@@ -410,16 +409,37 @@ class MiscSidebar(tk.Frame):
             )
         )
 
-        # Mousewheel
-        self.canvas.bind(
-            "<MouseWheel>",
-            lambda e: self.canvas.yview_scroll(
-                int(-1 * (e.delta / 120)),
-                "units"
-            )
-        )
+        # Robust Mousewheel logic that works even when hovering over child widgets
+        def _on_mousewheel(event):
+            if not self.canvas.winfo_exists():
+                return
+            # Get current mouse coordinates
+            x, y = self.canvas.winfo_pointerxy()
+            # Find the exact widget under the cursor
+            widget = self.canvas.winfo_containing(x, y)
+            
+            # If the widget under the mouse is part of this canvas (or the canvas itself)
+            if widget and str(widget).startswith(str(self.canvas)):
+                # Handle Windows/Mac (event.delta) and Linux (event.num)
+                if getattr(event, 'num', 0) == 4 or getattr(event, 'delta', 0) > 0:
+                    self.canvas.yview_scroll(-1, "units")
+                elif getattr(event, 'num', 0) == 5 or getattr(event, 'delta', 0) < 0:
+                    self.canvas.yview_scroll(1, "units")
+
+        # Bind to the top-level window so it intercepts scrolls globally
+        top = self.winfo_toplevel()
+        top.bind("<MouseWheel>", _on_mousewheel, add="+")
+        top.bind("<Button-4>", _on_mousewheel, add="+") # Linux Support
+        top.bind("<Button-5>", _on_mousewheel, add="+") # Linux Support
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", pady=(8, 6))
+
+    def _ping_all(self):
+        for row in self.rows:
+            row.ping_now()
+            
+    def _load(self):
+        pass
 
        
         # Collapsible add panel

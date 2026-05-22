@@ -302,3 +302,7 @@ timestamp,what,server,ip,diagnostic
 2026-05-22 15:27:18,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
 2026-05-22 15:28:35,TIMEOUT | loss=100%,dsdsd,019.528.65.1,sev=red_blink
 2026-05-22 15:28:35,TIMEOUT | loss=100%,dsdsd,019.528.65.1,sev=red_blink
+2026-05-22 15:33:55,TIMEOUT | loss=100%,dsdsd,019.528.65.1,sev=red_blink
+2026-05-22 15:33:55,TIMEOUT | loss=100%,dsdsd,019.528.65.1,sev=red_blink
+2026-05-22 15:34:09,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
+2026-05-22 15:34:09,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
