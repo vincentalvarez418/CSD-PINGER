@@ -8,5 +8,5 @@
 <h1 align="center">CSD PINGER</h1>
 
 <p align="center">
-  Version 2 with revisions
+  BRANCH 1
 </p>
