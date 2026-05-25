@@ -6,51 +6,54 @@
     "system_name": ""
   },
   {
-    "vm_name": "TEST ERROR",
-    "ip": "192.168.1.190",
+    "vm_name": "ETRACS DB",
+    "ip": "192.168.1.74",
     "physical_name": "",
     "system_name": ""
   },
   {
     "vm_name": "TEST BLANK",
-    "ip": "",
+    "ip": "192.168.1.137",
     "physical_name": "",
-    "system_name": ""
-  },
-  {
-    "vm_name": "VM 04",
-    "ip": "",
-    "physical_name": "",
-    "system_name": ""
+    "system_name": "",
+    "port": "76",
+    "endpoint": ""
   },
   {
     "vm_name": "VM 06",
-    "ip": "",
+    "ip": "192.168.1.137",
     "physical_name": "",
-    "system_name": ""
-  },
-  {
-    "vm_name": "VM 07",
-    "ip": "",
-    "physical_name": "",
-    "system_name": ""
-  },
-  {
-    "vm_name": "VM 08",
-    "ip": "",
-    "physical_name": "",
-    "system_name": ""
-  },
-  {
-    "vm_name": "VM 08",
-    "ip": "",
-    "physical_name": "",
-    "system_name": ""
+    "system_name": "",
+    "port": "75"
   },
   {
     "vm_name": "VM 09",
-    "ip": "",
+    "ip": "zamboangacity.gov.ph",
     "physical_name": "",
     "system_name": ""
+  },
+  {
+    "vm_name": "VM 08",
+    "ip": "google.com",
+    "physical_name": "",
+    "system_name": "",
+    "port": "",
+    "endpoint": ""
+  },
+  {
+    "vm_name": "VM 08",
+    "ip": "youtube.com",
+    "physical_name": "",
+    "system_name": "",
+    "port": "",
+    "endpoint": ""
+  },
+  {
+    "vm_name": "VM 08",
+    "ip": "",
+    "physical_name": "",
+    "system_name": "",
+    "port": "",
+    "endpoint": ""
   }
 ]

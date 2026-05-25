@@ -1,8 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
-import subprocess, platform, re, threading, datetime, json, os, sys, csv
+import subprocess, platform, re, threading, datetime, json, os, sys, csv, socket
 from PIL import Image, ImageTk
 import ctypes
+try:
+    import requests
+except ImportError:
+    requests = None
 
 
 
@@ -78,12 +82,12 @@ MISC_PATH   = os.path.join(_base(), "nm_misc.json")
 LOG_PATH    = os.path.join(_base(), "nm_log.csv")
 
 DEFAULT_HOSTS = [
-    {"vm_name": "VM 01", "ip": "", "physical_name": "", "system_name": ""},
-    {"vm_name": "VM 02", "ip": "", "physical_name": "", "system_name": ""},
-    {"vm_name": "VM 03", "ip": "", "physical_name": "", "system_name": ""},
-    {"vm_name": "VM 04", "ip": "", "physical_name": "", "system_name": ""},
-    {"vm_name": "VM 05", "ip": "", "physical_name": "", "system_name": ""},
-    {"vm_name": "VM 06", "ip": "", "physical_name": "", "system_name": ""},
+    {"vm_name": "VM 01", "ip": "", "physical_name": "", "system_name": "", "port": "", "endpoint": ""},
+    {"vm_name": "VM 02", "ip": "", "physical_name": "", "system_name": "", "port": "", "endpoint": ""},
+    {"vm_name": "VM 03", "ip": "", "physical_name": "", "system_name": "", "port": "", "endpoint": ""},
+    {"vm_name": "VM 04", "ip": "", "physical_name": "", "system_name": "", "port": "", "endpoint": ""},
+    {"vm_name": "VM 05", "ip": "", "physical_name": "", "system_name": "", "port": "", "endpoint": ""},
+    {"vm_name": "VM 06", "ip": "", "physical_name": "", "system_name": "", "port": "", "endpoint": ""},
 ]
 
 _DEFAULT_VM_PATTERN = re.compile(r"^VM\s+\d+$", re.IGNORECASE)
@@ -141,6 +145,39 @@ def log_event(what, vm_name, ip, diagnostic):
             ])
     except Exception:
         pass
+
+# ── Validation ───────────────────────────────────────────────────
+def is_valid_host(value):
+    """Check if value is a valid IP address or domain name"""
+    if not value:
+        return False
+    # Strip protocol if present
+    value = value.strip()
+    if value.lower().startswith("https://"):
+        value = value[8:]
+    elif value.lower().startswith("http://"):
+        value = value[7:]
+    # Remove trailing slash
+    value = value.rstrip("/")
+    # Check if it's a valid IP address
+    if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", value):
+        return True
+    # Check if it's a valid domain name
+    if re.match(r"^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$", value):
+        return True
+    return False
+
+def clean_host(value):
+    """Clean and return just the host part (IP or domain)"""
+    if not value:
+        return ""
+    value = value.strip()
+    if value.lower().startswith("https://"):
+        value = value[8:]
+    elif value.lower().startswith("http://"):
+        value = value[7:]
+    value = value.rstrip("/")
+    return value
 
 # ── Ping ─────────────────────────────────────────────────────────
 def ping_host(ip, count, dot_callback=None):
@@ -207,6 +244,77 @@ def ping_host(ip, count, dot_callback=None):
         status = "UP"
 
     return {"status": status, "loss": loss, "avg": avg_ms, "recv": recv}
+
+
+# ── Port Checking ────────────────────────────────────────────────
+def check_port(ip, port, timeout=2):
+    if not ip or ip == "0.0.0.0":
+        return {"status": "EMPTY", "response_time": "—"}
+    
+    try:
+        port_num = int(port)
+        if port_num < 1 or port_num > 65535:
+            return {"status": "INVALID", "response_time": "—"}
+    except (ValueError, TypeError):
+        return {"status": "INVALID", "response_time": "—"}
+    
+    try:
+        start = datetime.datetime.now()
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        result = sock.connect_ex((ip, port_num))
+        elapsed = (datetime.datetime.now() - start).total_seconds() * 1000
+        sock.close()
+        
+        if result == 0:
+            return {"status": "OPEN", "response_time": f"{elapsed:.0f}ms"}
+        else:
+            return {"status": "CLOSED", "response_time": "—"}
+    except socket.timeout:
+        return {"status": "TIMEOUT", "response_time": "—"}
+    except Exception:
+        return {"status": "ERROR", "response_time": "—"}
+
+
+# ── HTTP Request ────────────────────────────────────────────────
+def check_http(host, port=80, endpoint="", timeout=3):
+    if not host or host == "0.0.0.0":
+        return {"status": "EMPTY", "response_time": "—", "status_code": "—"}
+    
+    if not requests:
+        return {"status": "ERROR", "response_time": "—", "status_code": "requests not installed"}
+    
+    try:
+        port_num = int(port) if port else 80
+    except (ValueError, TypeError):
+        port_num = 80
+    
+    url = f"http://{host}:{port_num}{endpoint if endpoint else '/'}"
+    
+    try:
+        start = datetime.datetime.now()
+        response = requests.get(url, timeout=timeout)
+        elapsed = (datetime.datetime.now() - start).total_seconds() * 1000
+        status_code = response.status_code
+        
+        if 200 <= status_code < 300:
+            status = "OK"
+        elif 300 <= status_code < 400:
+            status = "REDIRECT"
+        elif 400 <= status_code < 500:
+            status = "CLIENT_ERR"
+        elif 500 <= status_code < 600:
+            status = "SERVER_ERR"
+        else:
+            status = "UNKNOWN"
+        
+        return {"status": status, "response_time": f"{elapsed:.0f}ms", "status_code": status_code}
+    except requests.exceptions.Timeout:
+        return {"status": "TIMEOUT", "response_time": "—", "status_code": "—"}
+    except requests.exceptions.ConnectionError:
+        return {"status": "NO_CONNECTION", "response_time": "—", "status_code": "—"}
+    except Exception as e:
+        return {"status": "ERROR", "response_time": "—", "status_code": str(e)[:20]}
 
 
 # ── Misc Sidebar Row ─────────────────────────────────────────────
@@ -515,10 +623,14 @@ class MiscSidebar(tk.Frame):
         if name in ("", "Name"):
             self._msg_lbl.config(text="need a name", fg=YELLOW)
             return
-        if not ip or ip == "IP" or not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip):
+        if not ip or ip == "IP":
             self._msg_lbl.config(text="bad IP", fg=RED)
             return
-        self._create_row({"name": name, "ip": ip})
+        cleaned = clean_host(ip)
+        if not is_valid_host(cleaned):
+            self._msg_lbl.config(text="bad IP", fg=RED)
+            return
+        self._create_row({"name": name, "ip": cleaned})
         self._save()
         self._name_var.set("Name")
         self._ip_var.set("IP")
@@ -657,13 +769,14 @@ class MiscSidebar(tk.Frame):
                 msg.config(text="Need a name", fg=YELLOW)
                 return
 
-            if not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip):
+            cleaned_ip = clean_host(ip)
+            if not is_valid_host(cleaned_ip):
                 msg.config(text="Invalid IP", fg=RED)
                 return
 
             self._create_row({
                 "name": name,
-                "ip": ip
+                "ip": cleaned_ip
             })
 
             self._save()
@@ -900,12 +1013,28 @@ class HostCard(tk.Frame):
         self.sys_entry.pack(side="left")
         tk.Label(phys_sys_row, text=")", font=("Consolas", 8), fg=TEXT_DIM, bg=CARD_BG).pack(side="left")
 
+        # ── Port and HTTP fields ──
+        port_http_row = tk.Frame(self, bg=CARD_BG)
+        port_http_row.pack(fill="x", pady=(4, 0))
+
+        tk.Label(port_http_row, text="PORT:", font=("Consolas", 7), fg=TEXT_DIM, bg=CARD_BG).pack(side="left", padx=(0, 3))
+        self.port_entry, _ = self._ph_field(
+            port_http_row, "port", "8080",
+            ("Consolas", 8), fg_active=TEXT_DIM, width=6)
+        self.port_entry.pack(side="left", padx=(0, 8))
+
+        tk.Label(port_http_row, text="ENDPOINT:", font=("Consolas", 7), fg=TEXT_DIM, bg=CARD_BG).pack(side="left", padx=(0, 3))
+        self.endpoint_entry, _ = self._ph_field(
+            port_http_row, "endpoint", "/api",
+            ("Consolas", 8), fg_active=TEXT_DIM, width=10)
+        self.endpoint_entry.pack(side="left")
+
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", pady=(3, 3))
 
         stats = tk.Frame(self, bg=CARD_BG)
         stats.pack(fill="x")
         self.stat_w = {}
-        for lbl, key in [("AVERAGE PING", "avg"), ("LOSS", "loss"), ("PACKETS RECV", "recv")]:
+        for lbl, key in [("AVERAGE PING", "avg"), ("LOSS", "loss"), ("PACKETS RECV", "recv"), ("PORT", "port_status"), ("HTTP", "http_status")]:
             col = tk.Frame(stats, bg=CARD_BG)
             col.pack(side="left", expand=True)
             tk.Label(col, text=lbl, font=("Consolas", 6), fg=TEXT_DIM, bg=CARD_BG).pack()
@@ -943,17 +1072,18 @@ class HostCard(tk.Frame):
     def _ip_save(self, _=None):
         val = self.ip_var.get().strip()
         if val and val != "Enter IP…":
-            if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", val):
+            cleaned = clean_host(val)
+            if is_valid_host(cleaned):
                 old = self.host.get("ip", "")
-                self.host["ip"] = val
+                self.host["ip"] = cleaned
                 self.ip_entry.config(fg=TEXT_DIM)
                 self.ip_saved.config(text="✓")
                 self.after(2000, lambda: self.ip_saved.config(text=""))
                 save_hosts([c.host for c in self.app.cards])
                 self._apply_dim()
-                if old != val:
+                if old != cleaned:
                     self._reset_stats()
-                    if val != "0.0.0.0":
+                    if cleaned != "0.0.0.0":
                         self.after(100, self._ping_single)
             else:
                 self.ip_saved.config(text="✗ bad IP")
@@ -1015,11 +1145,70 @@ class HostCard(tk.Frame):
                 self.after(0, self._update_dot, idx, success)
             result = ping_host(self.host["ip"], PING_COUNT, dot_callback=on_dot)
             self.after(0, self.update_result, result)
+            
+            # Check port if configured
+            if self.host.get("port"):
+                port_result = check_port(self.host["ip"], self.host["port"])
+                self.after(0, self._update_port_status, port_result)
+            
+            # Check HTTP if configured
+            if self.host.get("port"):
+                endpoint = self.host.get("endpoint", "")
+                http_result = check_http(self.host["ip"], self.host["port"], endpoint)
+                self.after(0, self._update_http_status, http_result)
         threading.Thread(target=run, daemon=True).start()
 
     def _update_dot(self, idx, success):
         if idx < len(self.dots):
             self.dots[idx].config(fg=GREEN if success else RED)
+
+    def _update_port_status(self, result):
+        status = result.get("status", "ERROR")
+        response_time = result.get("response_time", "—")
+        
+        if status == "OPEN":
+            fg = GREEN
+            text = f"{response_time}"
+        elif status == "CLOSED":
+            fg = RED
+            text = "Closed"
+        elif status == "TIMEOUT":
+            fg = ORANGE
+            text = "Timeout"
+        else:
+            fg = TEXT_DIM
+            text = "—"
+        
+        self.stat_w["port_status"].config(text=text, fg=fg)
+
+    def _update_http_status(self, result):
+        status = result.get("status", "ERROR")
+        status_code = result.get("status_code", "—")
+        response_time = result.get("response_time", "—")
+        
+        if status == "OK":
+            fg = GREEN
+            text = f"✓ {status_code}"
+        elif status == "REDIRECT":
+            fg = YELLOW
+            text = f"→ {status_code}"
+        elif status == "CLIENT_ERR":
+            fg = ORANGE
+            text = f"✗ {status_code}"
+        elif status == "SERVER_ERR":
+            fg = RED
+            text = f"✗ {status_code}"
+        elif status == "TIMEOUT":
+            fg = ORANGE
+            text = "Timeout"
+        elif status == "NO_CONNECTION":
+            fg = RED
+            text = "No Conn"
+        else:
+            fg = TEXT_DIM
+            text = "—"
+        
+        self.stat_w["http_status"].config(text=text, fg=fg)
 
     def set_pinging(self):
         self._stop_blink()
@@ -1274,7 +1463,7 @@ class PingApp(tk.Tk):
         modal.grab_set()
 
         modal.update_idletasks()
-        w, h = 560, 290
+        w, h = 560, 420
         x = self.winfo_rootx() + (self.winfo_width() - w) // 2
         y = self.winfo_rooty() + (self.winfo_height() - h) // 2
         modal.geometry(f"{w}x{h}+{x}+{y}")
@@ -1313,6 +1502,8 @@ class PingApp(tk.Tk):
             ("IP", 14),
             ("Physical Name", 16),
             ("System", 16),
+            ("Port", 8),
+            ("Endpoint", 14),
         ]
 
         _vars = []
@@ -1370,7 +1561,7 @@ class PingApp(tk.Tk):
             vals = [e.get().strip() for e, ph in _vars]
             defaults = [ph for _, ph in _vars]
 
-            vm, ip, phys, sys_n = [
+            vm, ip, phys, sys_n, port, endpoint = [
                 "" if v == defaults[i] else v
                 for i, v in enumerate(vals)
             ]
@@ -1378,15 +1569,20 @@ class PingApp(tk.Tk):
             if not vm:
                 vm = f"VM {len(self.cards) + 1:02d}"
 
-            if ip and not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip):
-                msg_lbl.config(text="Invalid IP format", fg=RED)
-                return
+            if ip:
+                cleaned_ip = clean_host(ip)
+                if not is_valid_host(cleaned_ip):
+                    msg_lbl.config(text="Invalid IP format", fg=RED)
+                    return
+                ip = cleaned_ip
 
             host = {
                 "vm_name": vm,
                 "ip": ip,
                 "physical_name": phys,
                 "system_name": sys_n,
+                "port": port,
+                "endpoint": endpoint,
             }
 
             self._add_card(host, len(self.cards))
@@ -1573,7 +1769,7 @@ class PingApp(tk.Tk):
 
         add_row = tk.Frame(self.add_panel, bg=CARD_BG)
         add_row.pack(fill="x")
-        fields = [("VM Name", 14), ("IP", 14), ("Physical Name", 16), ("System Name", 16)]
+        fields = [("VM Name", 14), ("IP", 14), ("Physical Name", 16), ("System Name", 16), ("Port", 8), ("Endpoint", 14)]
         self._add_vars = []
         for ph, w in fields:
             e = self._ph_entry(add_row, ph, w)
@@ -1689,6 +1885,18 @@ class PingApp(tk.Tk):
                 self.after(0, card._update_dot, idx, success)
             res = ping_host(card.host["ip"], PING_COUNT, dot_callback=on_dot)
             self.after(0, card.update_result, res)
+            
+            # Check port if configured
+            if card.host.get("port"):
+                port_result = check_port(card.host["ip"], card.host["port"])
+                self.after(0, card._update_port_status, port_result)
+            
+            # Check HTTP if configured
+            if card.host.get("port"):
+                endpoint = card.host.get("endpoint", "")
+                http_result = check_http(card.host["ip"], card.host["port"], endpoint)
+                self.after(0, card._update_http_status, http_result)
+            
             with lock:
                 done[0] += 1
                 if done[0] == len(cards):
@@ -1730,17 +1938,22 @@ class PingApp(tk.Tk):
     def _add_host(self):
         vals     = [e.get().strip() for e, ph in self._add_vars]
         defaults = [ph for _, ph in self._add_vars]
-        vm, ip, phys, sys_n = [
+        vm, ip, phys, sys_n, port, endpoint = [
             "" if v == defaults[i] else v for i, v in enumerate(vals)
         ]
-        if ip and not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip):
-            self._set_status("Invalid IP format", RED)
-            return
+        if ip:
+            cleaned_ip = clean_host(ip)
+            if not is_valid_host(cleaned_ip):
+                self._set_status("Invalid IP format", RED)
+                return
+            ip = cleaned_ip
         host = {
             "vm_name":       vm or f"VM {len(self.cards)+1:02d}",
             "ip":            ip,
             "physical_name": phys,
             "system_name":   sys_n,
+            "port":          port,
+            "endpoint":      endpoint,
         }
         self._add_card(host, len(self.cards))
         save_hosts([c.host for c in self.cards])

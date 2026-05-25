@@ -306,3 +306,14 @@ timestamp,what,server,ip,diagnostic
 2026-05-22 15:33:55,TIMEOUT | loss=100%,dsdsd,019.528.65.1,sev=red_blink
 2026-05-22 15:34:09,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
 2026-05-22 15:34:09,TIMEOUT | loss=100%,BIOMETRIsddasdC,192.168.1.98,sev=red_blink
+2026-05-22 16:17:50,TIMEOUT | loss=100%,ETRACS DB,192.168.1.74,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 10:43:33,TIMEOUT | loss=100%,TEST BLANK,192.168.1.137,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 11:56:33,TIMEOUT | loss=100%,VM 08,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 11:56:49,TIMEOUT | loss=100%,VM 08,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 11:57:46,TIMEOUT | loss=100%,VM 08,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 12:02:13,TIMEOUT | loss=100%,VM 09,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 12:03:02,TIMEOUT | loss=100%,VM 09,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 12:03:02,TIMEOUT | loss=100%,VM 09,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 12:03:21,TIMEOUT | loss=100%,VM 09,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 12:05:40,TIMEOUT | loss=100%,VM 09,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 12:05:44,TIMEOUT | loss=100%,VM 09,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
