@@ -5,6 +5,9 @@ from PIL import Image, ImageTk
 import ctypes
 try:
     import requests
+    requests.packages.urllib3.disable_warnings(
+        requests.packages.urllib3.exceptions.InsecureRequestWarning
+    )
 except ImportError:
     requests = None
 
@@ -276,45 +279,63 @@ def check_port(ip, port, timeout=2):
         return {"status": "ERROR", "response_time": "—"}
 
 
-# ── HTTP Request ────────────────────────────────────────────────
+# ── HTTP/S Request ───────────────────────────────────────────────
 def check_http(host, port=80, endpoint="", timeout=3):
     if not host or host == "0.0.0.0":
-        return {"status": "EMPTY", "response_time": "—", "status_code": "—"}
-    
+        return {"status": "EMPTY", "response_time": "—", "status_code": "—", "protocol": "—"}
+
     if not requests:
-        return {"status": "ERROR", "response_time": "—", "status_code": "requests not installed"}
-    
+        return {"status": "ERROR", "response_time": "—", "status_code": "no lib", "protocol": "—"}
+
     try:
         port_num = int(port) if port else 80
     except (ValueError, TypeError):
         port_num = 80
-    
-    url = f"http://{host}:{port_num}{endpoint if endpoint else '/'}"
-    
-    try:
-        start = datetime.datetime.now()
-        response = requests.get(url, timeout=timeout)
-        elapsed = (datetime.datetime.now() - start).total_seconds() * 1000
-        status_code = response.status_code
-        
-        if 200 <= status_code < 300:
-            status = "OK"
-        elif 300 <= status_code < 400:
-            status = "REDIRECT"
-        elif 400 <= status_code < 500:
-            status = "CLIENT_ERR"
-        elif 500 <= status_code < 600:
-            status = "SERVER_ERR"
-        else:
-            status = "UNKNOWN"
-        
-        return {"status": status, "response_time": f"{elapsed:.0f}ms", "status_code": status_code}
-    except requests.exceptions.Timeout:
-        return {"status": "TIMEOUT", "response_time": "—", "status_code": "—"}
-    except requests.exceptions.ConnectionError:
-        return {"status": "NO_CONNECTION", "response_time": "—", "status_code": "—"}
-    except Exception as e:
-        return {"status": "ERROR", "response_time": "—", "status_code": str(e)[:20]}
+
+    endpoint_path = endpoint if endpoint else '/'
+
+    # Pick scheme order based on port
+    if port_num == 443:
+        schemes = ["https"]
+    elif port_num == 80:
+        schemes = ["http", "https"]
+    else:
+        schemes = ["https", "http"]
+
+    last_err = "ERROR"
+    for scheme in schemes:
+        url = f"{scheme}://{host}:{port_num}{endpoint_path}"
+        try:
+            start = datetime.datetime.now()
+            response = requests.get(url, timeout=timeout, verify=False)
+            elapsed = (datetime.datetime.now() - start).total_seconds() * 1000
+            status_code = response.status_code
+
+            if 200 <= status_code < 300:
+                status = "OK"
+            elif 300 <= status_code < 400:
+                status = "REDIRECT"
+            elif 400 <= status_code < 500:
+                status = "CLIENT_ERR"
+            elif 500 <= status_code < 600:
+                status = "SERVER_ERR"
+            else:
+                status = "UNKNOWN"
+
+            return {
+                "status": status,
+                "response_time": f"{elapsed:.0f}ms",
+                "status_code": status_code,
+                "protocol": scheme.upper(),
+            }
+        except requests.exceptions.Timeout:
+            last_err = "TIMEOUT"
+        except requests.exceptions.ConnectionError:
+            last_err = "NO_CONNECTION"
+        except Exception:
+            last_err = "ERROR"
+
+    return {"status": last_err, "response_time": "—", "status_code": "—", "protocol": "—"}
 
 
 # ── Misc Sidebar Row ─────────────────────────────────────────────
@@ -465,8 +486,12 @@ class MiscSidebar(tk.Frame):
     def __init__(self, parent, **kw):
         super().__init__(parent, bg=BG, **kw)
         self.rows = []
+        self._auto_scroll_job = None
+        self._scroll_pause_until = 0
         self._build()
         self._load()
+        # Start continuous auto-scroll after initial pings settle
+        self.after(4000, self._auto_scroll_tick)
 
     def _build(self):
         hdr = tk.Frame(self, bg=BG)
@@ -488,7 +513,8 @@ class MiscSidebar(tk.Frame):
         self.canvas = tk.Canvas(
             scroll_wrap,
             bg=BG,
-            highlightthickness=0
+            highlightthickness=0,
+            yscrollincrement=1
         )
         self.canvas.pack(side="left", fill="both", expand=True)
 
@@ -530,9 +556,9 @@ class MiscSidebar(tk.Frame):
             if widget and str(widget).startswith(str(self.canvas)):
                 # Handle Windows/Mac (event.delta) and Linux (event.num)
                 if getattr(event, 'num', 0) == 4 or getattr(event, 'delta', 0) > 0:
-                    self.canvas.yview_scroll(-1, "units")
+                    self.canvas.yview_scroll(-30, "units")
                 elif getattr(event, 'num', 0) == 5 or getattr(event, 'delta', 0) < 0:
-                    self.canvas.yview_scroll(1, "units")
+                    self.canvas.yview_scroll(30, "units")
 
         # Bind to the top-level window so it intercepts scrolls globally
         top = self.winfo_toplevel()
@@ -541,6 +567,48 @@ class MiscSidebar(tk.Frame):
         top.bind("<Button-5>", _on_mousewheel, add="+") # Linux Support
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", pady=(8, 6))
+
+    # ── Continuous auto-scroll ───────────────────────────────────
+    def _is_mouse_over(self):
+        """Check if the mouse is currently hovering over the sidebar."""
+        try:
+            x, y = self.winfo_pointerxy()
+            w = self.winfo_containing(x, y)
+            return w is not None and str(w).startswith(str(self))
+        except Exception:
+            return False
+
+    def _auto_scroll_tick(self):
+        import time
+        now = time.time()
+
+        # Skip if mouse is hovering (let user interact)
+        if self._is_mouse_over():
+            self._auto_scroll_job = self.after(200, self._auto_scroll_tick)
+            return
+
+        # Skip if in a pause window (top/bottom dwell)
+        if now < self._scroll_pause_until:
+            self._auto_scroll_job = self.after(200, self._auto_scroll_tick)
+            return
+
+        top, bottom = self.canvas.yview()
+
+        # All content fits — nothing to scroll
+        if top == 0.0 and bottom >= 1.0:
+            self._auto_scroll_job = self.after(500, self._auto_scroll_tick)
+            return
+
+        # Reached the bottom — pause, then jump to top
+        if bottom >= 1.0:
+            self.canvas.yview_moveto(0.0)
+            self._scroll_pause_until = now + 3.0  # 3s dwell at top
+            self._auto_scroll_job = self.after(200, self._auto_scroll_tick)
+            return
+
+        # Normal scroll: move down by a small amount
+        self.canvas.yview_scroll(1, "units")
+        self._auto_scroll_job = self.after(30, self._auto_scroll_tick)
 
     def _ping_all(self):
         for row in self.rows:
@@ -615,6 +683,8 @@ class MiscSidebar(tk.Frame):
         row = MiscRow(self.list_frame, entry, self)
         row.pack(fill="x", pady=(0, 4))
         self.rows.append(row)
+        # Auto-scroll sidebar to show newly added row
+        self.after(50, lambda: self.canvas.yview_moveto(1.0))
         return row
 
     def _add_entry(self):
@@ -1034,11 +1104,13 @@ class HostCard(tk.Frame):
         stats = tk.Frame(self, bg=CARD_BG)
         stats.pack(fill="x")
         self.stat_w = {}
-        for lbl, key in [("AVERAGE PING", "avg"), ("LOSS", "loss"), ("PACKETS RECV", "recv"), ("PORT", "port_status"), ("HTTP", "http_status")]:
+        for lbl, key in [("AVERAGE PING", "avg"), ("LOSS", "loss"), ("PACKETS RECV", "recv"), ("PORT", "port_status"), ("HTTP/S", "http_status")]:
             col = tk.Frame(stats, bg=CARD_BG)
             col.pack(side="left", expand=True)
             tk.Label(col, text=lbl, font=("Consolas", 6), fg=TEXT_DIM, bg=CARD_BG).pack()
-            v = tk.Label(col, text="—", font=("Consolas", 11, "bold"), fg=TEXT, bg=CARD_BG)
+            # Use smaller font for port and HTTP to prevent text clipping
+            f_size = 9 if key in ("port_status", "http_status") else 11
+            v = tk.Label(col, text="—", font=("Consolas", f_size, "bold"), fg=TEXT, bg=CARD_BG)
             v.pack()
             self.stat_w[key] = v
 
@@ -1185,19 +1257,20 @@ class HostCard(tk.Frame):
         status = result.get("status", "ERROR")
         status_code = result.get("status_code", "—")
         response_time = result.get("response_time", "—")
-        
+        protocol = result.get("protocol", "—")
+
         if status == "OK":
             fg = GREEN
-            text = f"✓ {status_code}"
+            text = f"{protocol} {status_code}"
         elif status == "REDIRECT":
             fg = YELLOW
-            text = f"→ {status_code}"
+            text = f"{protocol} {status_code}"
         elif status == "CLIENT_ERR":
             fg = ORANGE
-            text = f"✗ {status_code}"
+            text = f"{protocol} {status_code}"
         elif status == "SERVER_ERR":
             fg = RED
-            text = f"✗ {status_code}"
+            text = f"{protocol} {status_code}"
         elif status == "TIMEOUT":
             fg = ORANGE
             text = "Timeout"
@@ -1207,7 +1280,7 @@ class HostCard(tk.Frame):
         else:
             fg = TEXT_DIM
             text = "—"
-        
+
         self.stat_w["http_status"].config(text=text, fg=fg)
 
     def set_pinging(self):

@@ -317,3 +317,40 @@ timestamp,what,server,ip,diagnostic
 2026-05-25 12:03:21,TIMEOUT | loss=100%,VM 09,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
 2026-05-25 12:05:40,TIMEOUT | loss=100%,VM 09,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
 2026-05-25 12:05:44,TIMEOUT | loss=100%,VM 09,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 18:19:33,TIMEOUT | loss=100%,ASSESSOR,192.168.24.233,sev=red_blink
+2026-05-25 18:19:33,TIMEOUT | loss=100%,LEGAL,192.168.23.248,sev=red_blink
+2026-05-25 18:19:33,TIMEOUT | loss=100%,ADMIN,192.168.24.232,sev=red_blink
+2026-05-25 18:19:34,TIMEOUT | loss=100%,LEGAL,192.168.23.248,sev=red_blink
+2026-05-25 18:19:34,TIMEOUT | loss=100%,ADMIN,192.168.24.232,sev=red_blink
+2026-05-25 18:19:34,TIMEOUT | loss=100%,VM 09,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 18:19:34,TIMEOUT | loss=100%,ASSESSOR,192.168.24.233,sev=red_blink
+2026-05-25 18:20:15,TIMEOUT | loss=100%,ADMIN,192.168.24.232,sev=red_blink
+2026-05-25 18:20:15,TIMEOUT | loss=100%,LEGAL,192.168.23.248,sev=red_blink
+2026-05-25 18:20:15,TIMEOUT | loss=100%,ASSESSOR,192.168.24.233,sev=red_blink
+2026-05-25 18:29:53,TIMEOUT | loss=100%,LEGAL,192.168.23.248,sev=red_blink
+2026-05-25 18:29:53,TIMEOUT | loss=100%,ASSESSOR,192.168.24.233,sev=red_blink
+2026-05-25 18:29:53,TIMEOUT | loss=100%,ADMIN,192.168.24.232,sev=red_blink
+2026-05-25 18:29:53,TIMEOUT | loss=100%,ASSESSOR,192.168.24.233,sev=red_blink
+2026-05-25 18:29:53,TIMEOUT | loss=100%,ADMIN,192.168.24.232,sev=red_blink
+2026-05-25 18:29:53,TIMEOUT | loss=100%,LEGAL,192.168.23.248,sev=red_blink
+2026-05-25 18:33:05,TIMEOUT | loss=100%,LEGAL,192.168.23.248,sev=red_blink
+2026-05-25 18:33:05,TIMEOUT | loss=100%,ASSESSOR,192.168.24.233,sev=red_blink
+2026-05-25 18:33:05,TIMEOUT | loss=100%,ADMIN,192.168.24.232,sev=red_blink
+2026-05-25 18:33:05,TIMEOUT | loss=100%,ASSESSOR,192.168.24.233,sev=red_blink
+2026-05-25 18:33:05,TIMEOUT | loss=100%,LEGAL,192.168.23.248,sev=red_blink
+2026-05-25 18:33:05,TIMEOUT | loss=100%,ADMIN,192.168.24.232,sev=red_blink
+2026-05-25 18:33:38,TIMEOUT | loss=100%,VM 09,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 18:39:21,TIMEOUT | loss=100%,LEGAL,192.168.23.248,sev=red_blink
+2026-05-25 18:39:21,TIMEOUT | loss=100%,ASSESSOR,192.168.24.233,sev=red_blink
+2026-05-25 18:39:21,TIMEOUT | loss=100%,ADMIN,192.168.24.232,sev=red_blink
+2026-05-25 18:39:22,TIMEOUT | loss=100%,ASSESSOR,192.168.24.233,sev=red_blink
+2026-05-25 18:39:22,TIMEOUT | loss=100%,ADMIN,192.168.24.232,sev=red_blink
+2026-05-25 18:39:22,TIMEOUT | loss=100%,LEGAL,192.168.23.248,sev=red_blink
+2026-05-25 18:39:22,TIMEOUT | loss=100%,VM 09,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-25 18:45:41,TIMEOUT | loss=100%,ADMIN,192.168.24.232,sev=red_blink
+2026-05-25 18:45:41,TIMEOUT | loss=100%,ADMIN,192.168.24.232,sev=red_blink
+2026-05-25 18:45:41,TIMEOUT | loss=100%,ASSESSOR,192.168.24.233,sev=red_blink
+2026-05-25 18:45:41,TIMEOUT | loss=100%,LEGAL,192.168.23.248,sev=red_blink
+2026-05-25 18:45:41,TIMEOUT | loss=100%,LEGAL,192.168.23.248,sev=red_blink
+2026-05-25 18:45:41,TIMEOUT | loss=100%,ASSESSOR,192.168.24.233,sev=red_blink
+2026-05-25 18:54:41,TIMEOUT | loss=100%,VM https://zamboangacity.gov.ph/08,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"

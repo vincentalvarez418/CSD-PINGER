@@ -27,12 +27,6 @@
     "port": "75"
   },
   {
-    "vm_name": "VM 09",
-    "ip": "zamboangacity.gov.ph",
-    "physical_name": "",
-    "system_name": ""
-  },
-  {
     "vm_name": "VM 08",
     "ip": "google.com",
     "physical_name": "",
@@ -49,8 +43,8 @@
     "endpoint": ""
   },
   {
-    "vm_name": "VM 08",
-    "ip": "",
+    "vm_name": "VM https://zamboangacity.gov.ph/08",
+    "ip": "zamboangacity.gov.ph",
     "physical_name": "",
     "system_name": "",
     "port": "",
