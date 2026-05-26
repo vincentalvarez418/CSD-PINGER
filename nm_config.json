@@ -1,11 +1,5 @@
 [
   {
-    "vm_name": "ETRACS",
-    "ip": "192.168.1.190",
-    "physical_name": "",
-    "system_name": ""
-  },
-  {
     "vm_name": "ETRACS DB",
     "ip": "192.168.1.74",
     "physical_name": "",
@@ -18,6 +12,13 @@
     "system_name": "",
     "port": "76",
     "endpoint": ""
+  },
+  {
+    "vm_name": "ETRACS",
+    "ip": "192.168.1.190",
+    "physical_name": "",
+    "system_name": "",
+    "port": ""
   },
   {
     "vm_name": "VM 06",
@@ -49,5 +50,13 @@
     "system_name": "",
     "port": "",
     "endpoint": ""
+  },
+  {
+    "vm_name": "TEST",
+    "ip": "httpbin.org",
+    "physical_name": "TEST",
+    "system_name": "",
+    "port": "80",
+    "endpoint": "/get"
   }
 ]

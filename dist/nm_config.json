@@ -1,0 +1,38 @@
+[
+  {
+    "vm_name": "VM 01",
+    "ip": "",
+    "physical_name": "",
+    "system_name": ""
+  },
+  {
+    "vm_name": "VM 02",
+    "ip": "",
+    "physical_name": "",
+    "system_name": ""
+  },
+  {
+    "vm_name": "VM 03",
+    "ip": "",
+    "physical_name": "",
+    "system_name": ""
+  },
+  {
+    "vm_name": "VM 04",
+    "ip": "",
+    "physical_name": "",
+    "system_name": ""
+  },
+  {
+    "vm_name": "VM 05",
+    "ip": "",
+    "physical_name": "",
+    "system_name": ""
+  },
+  {
+    "vm_name": "VM 06",
+    "ip": "",
+    "physical_name": "",
+    "system_name": ""
+  }
+]

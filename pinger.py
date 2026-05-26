@@ -281,6 +281,10 @@ def check_port(ip, port, timeout=2):
 
 # ── HTTP/S Request ───────────────────────────────────────────────
 def check_http(host, port=80, endpoint="", timeout=3):
+
+    if not any(c.isalpha() for c in str(host)):
+        return {"status": "EMPTY", "response_time": "—", "status_code": "—", "protocol": "—"}
+    
     if not host or host == "0.0.0.0":
         return {"status": "EMPTY", "response_time": "—", "status_code": "—", "protocol": "—"}
 
@@ -330,6 +334,8 @@ def check_http(host, port=80, endpoint="", timeout=3):
             }
         except requests.exceptions.Timeout:
             last_err = "TIMEOUT"
+        except requests.exceptions.SSLError:
+            last_err = "NO_CONNECTION"
         except requests.exceptions.ConnectionError:
             last_err = "NO_CONNECTION"
         except Exception:
@@ -355,6 +361,7 @@ class MiscRow(tk.Frame):
 
         top = tk.Frame(self, bg=CARD_BG)
         top.pack(fill="x")
+
 
         self.dot = tk.Label(top, text="●", font=("Consolas", 10),
                             fg=TEXT_DIM, bg=CARD_BG)
@@ -399,6 +406,22 @@ class MiscRow(tk.Frame):
             d = tk.Label(dot_row, text="●", font=("Consolas", 7), fg=BORDER, bg=CARD_BG)
             d.pack(side="left", padx=1)
             self.dots.append(d)
+
+            drag_widgets = (
+                self,
+                top,
+                bot,
+                dot_row,
+                self.name_lbl,
+                self.ip_lbl,
+                self.status_lbl,
+                self.dot
+            )
+
+            for w in drag_widgets:
+                w.bind("<ButtonPress-1>", self._drag_start)
+                w.bind("<B1-Motion>", self._drag_motion)
+                w.bind("<ButtonRelease-1>", self._drag_release)
 
     def _remove(self):
         self._stop_blink()
@@ -477,6 +500,82 @@ class MiscRow(tk.Frame):
                 try: ww.configure(bg=color)
                 except Exception: pass
 
+    def _drag_start(self, event):
+        self._drag_start_y = event.y_root
+
+        self.configure(
+            highlightbackground=ACCENT,
+            highlightthickness=2
+        )
+
+        self.lift()
+
+        self.sidebar._drag_row = self
+
+    def _drag_motion(self, event):
+        rows = self.sidebar.rows
+
+        if self not in rows:
+            return
+
+        idx = rows.index(self)
+
+        dy = event.y_root - self._drag_start_y
+
+        # Reset borders
+        for r in rows:
+            r.configure(highlightbackground=BORDER)
+
+        # Dragged row
+        self.configure(
+            highlightbackground=ACCENT,
+            highlightthickness=2
+        )
+
+        row_height = self.winfo_height() + 4
+
+        # Move UP
+        if dy < -(row_height // 2) and idx > 0:
+
+            rows[idx], rows[idx - 1] = rows[idx - 1], rows[idx]
+
+            self._repack(rows)
+
+            self.sidebar._save()
+
+            # Reset anchor AFTER successful swap
+            self._drag_start_y = event.y_root
+
+        # Move DOWN
+        elif dy > (row_height // 2) and idx < len(rows) - 1:
+
+            rows[idx], rows[idx + 1] = rows[idx + 1], rows[idx]
+
+            self._repack(rows)
+
+            self.sidebar._save()
+
+            # Reset anchor AFTER successful swap
+            self._drag_start_y = event.y_root
+
+    def _drag_release(self, event):
+        for r in self.sidebar.rows:
+            r.configure(
+                highlightbackground=BORDER,
+                highlightthickness=1,
+                bg=CARD_BG
+            )
+
+            r._tint_children(CARD_BG)
+
+        self.sidebar._drag_row = None
+
+    def _repack(self, rows):
+        for row in rows:
+            row.pack_forget()
+        for row in rows:
+            row.pack(fill="x", pady=(0, 4))
+
     def ping_now(self):
         self._ping()
 
@@ -486,6 +585,7 @@ class MiscSidebar(tk.Frame):
     def __init__(self, parent, **kw):
         super().__init__(parent, bg=BG, **kw)
         self.rows = []
+        self._drag_row = None
         self._auto_scroll_job = None
         self._scroll_pause_until = 0
         self._build()
@@ -967,6 +1067,9 @@ class HostCard(tk.Frame):
         self._rc_job = None
         self._rc_step = 0
         self._rc_active = False
+        self._drag_start_x = 0
+        self._drag_start_y = 0
+        self._drag_ghost = None
 
     def _is_unconfigured(self):
         vm  = (self.host.get("vm_name") or "").strip()
@@ -1089,7 +1192,7 @@ class HostCard(tk.Frame):
 
         tk.Label(port_http_row, text="PORT:", font=("Consolas", 7), fg=TEXT_DIM, bg=CARD_BG).pack(side="left", padx=(0, 3))
         self.port_entry, _ = self._ph_field(
-            port_http_row, "port", "8080",
+            port_http_row, "port", "",
             ("Consolas", 8), fg_active=TEXT_DIM, width=6)
         self.port_entry.pack(side="left", padx=(0, 8))
 
@@ -1127,8 +1230,10 @@ class HostCard(tk.Frame):
         self.ts_lbl = tk.Label(bot, text="—", font=("Consolas", 7), fg=TEXT_DIM, bg=CARD_BG)
         self.ts_lbl.pack(side="right")
         self._lp_job = None
+        self._dragging = False
         self._bind_long_press(self)
         self._bind_right_hold(self)
+        self._init_card_drag(self)
 
     def _ip_focus_in(self, _=None):
         if self.ip_var.get() in ("Enter IP…", "0.0.0.0") and not self.host.get("ip"):
@@ -1213,21 +1318,84 @@ class HostCard(tk.Frame):
             return
         self.set_pinging()
         def run():
-            def on_dot(idx, success):
-                self.after(0, self._update_dot, idx, success)
-            result = ping_host(self.host["ip"], PING_COUNT, dot_callback=on_dot)
-            self.after(0, self.update_result, result)
+            target   = (self.host.get("ip") or "").strip().lower()
+            port_val = (self.host.get("port") or "").strip()
+            ep       = (self.host.get("endpoint") or "").strip()
             
-            # Check port if configured
-            if self.host.get("port"):
-                port_result = check_port(self.host["ip"], self.host["port"])
-                self.after(0, self._update_port_status, port_result)
-            
-            # Check HTTP if configured
-            if self.host.get("port"):
-                endpoint = self.host.get("endpoint", "")
-                http_result = check_http(self.host["ip"], self.host["port"], endpoint)
-                self.after(0, self._update_http_status, http_result)
+            is_raw_ip  = bool(re.match(r"^\d{1,3}(\.\d{1,3}){3}$", target))
+            has_alpha  = bool(re.search(r"[a-z]", target))
+            is_domain  = has_alpha and not is_raw_ip
+
+            if is_domain:
+                active_port = port_val if port_val else "443"
+                
+                success_count = 0
+                total_time = 0
+                valid_times_count = 0
+                last_http_result = {}
+
+                for idx in range(PING_COUNT):
+                    http_result = check_http(target, active_port, ep)
+                    last_http_result = http_result
+                    
+                    is_ok = http_result.get("status") == "SUCCESS" or "200" in str(http_result.get("status_code", ""))
+                    if is_ok:
+                        success_count += 1
+                        r_time_str = http_result.get("response_time", "").replace("ms", "").strip()
+                        if r_time_str.isdigit():
+                            total_time += int(r_time_str)
+                            valid_times_count += 1
+                    
+                    self.after(0, self._update_dot, idx, is_ok)
+
+                loss_pct = int(((PING_COUNT - success_count) / PING_COUNT) * 100)
+                true_avg_ms = f"{int(total_time / valid_times_count)}ms" if valid_times_count > 0 else "—"
+
+                if success_count > 0:
+                    self.after(0, self.update_result, {
+                        "status": "UP", 
+                        "avg": "—", 
+                        "loss": loss_pct, 
+                        "recv": success_count
+                    })
+                    # Keeps column clean and matching the label
+                    self.after(0, self._update_port_status, {
+                        "status": "OPEN", 
+                        "response_time": "Open"
+                    })
+                    # Moves response metrics directly into the HTTP label target layout
+                    status_code = last_http_result.get("status_code", "200")
+                    protocol = last_http_result.get("protocol", "HTTPS")
+                    self.after(0, self._update_http_status, {
+                        "status": "OK",
+                        "status_code": f"{status_code} ({true_avg_ms})", 
+                        "protocol": protocol,
+                        "response_time": true_avg_ms
+                    })
+                else:
+                    port_result = check_port(target, active_port)
+                    self.after(0, self._update_port_status, port_result)
+                    self.after(0, self.update_result, {
+                        "status": "DOWN", 
+                        "avg": "—", 
+                        "loss": 100, 
+                        "recv": 0
+                    })
+            else:
+                # Standalone fallback execution flow for traditional raw IP ping targets
+                def on_dot(idx, success):
+                    self.after(0, self._update_dot, idx, success)
+                result = ping_host(target, PING_COUNT, dot_callback=on_dot)
+                self.after(0, self.update_result, result)
+                
+                if port_val:
+                    port_result = check_port(target, port_val)
+                    self.after(0, self._update_port_status, port_result)
+                self.after(0, self._update_http_status, {
+                    "status": "EMPTY", "response_time": "—",
+                    "status_code": "—", "protocol": "—"
+                })
+
         threading.Thread(target=run, daemon=True).start()
 
     def _update_dot(self, idx, success):
@@ -1259,7 +1427,10 @@ class HostCard(tk.Frame):
         response_time = result.get("response_time", "—")
         protocol = result.get("protocol", "—")
 
-        if status == "OK":
+        if status == "EMPTY":
+            fg = TEXT_DIM
+            text = "—"
+        elif status == "OK":
             fg = GREEN
             text = f"{protocol} {status_code}"
         elif status == "REDIRECT":
@@ -1277,6 +1448,9 @@ class HostCard(tk.Frame):
         elif status == "NO_CONNECTION":
             fg = RED
             text = "No Conn"
+        elif status == "ERROR":
+            fg = RED
+            text = "Err"
         else:
             fg = TEXT_DIM
             text = "—"
@@ -1356,6 +1530,79 @@ class HostCard(tk.Frame):
             what = f"{status} | loss={loss}%"
             diag = f"avg={avg}, recv={recv}/{PING_COUNT}, sev={sev}"
             log_event(what, self.host.get("vm_name", ""), self.host.get("ip", ""), diag)
+
+    def _init_card_drag(self, widget):
+        if isinstance(widget, (tk.Frame, tk.Label)):
+            widget.bind("<ButtonPress-1>",   self._card_drag_start, add="+")
+            widget.bind("<B1-Motion>",       self._card_drag_motion, add="+")
+            widget.bind("<ButtonRelease-1>", self._card_drag_release, add="+")
+        for child in widget.winfo_children():
+            self._init_card_drag(child)
+
+    def _card_drag_start(self, event):
+        self._drag_start_x = event.x_root
+        self._drag_start_y = event.y_root
+        self._dragging = False
+
+    def _card_drag_motion(self, event):
+        dx = abs(event.x_root - self._drag_start_x)
+        dy = abs(event.y_root - self._drag_start_y)
+        if not self._dragging and (dx > 8 or dy > 8):
+            self._dragging = True
+            self.configure(highlightbackground=ACCENT)
+
+        if not self._dragging:
+            return
+
+        # Find which card we're hovering over
+        x, y = event.x_root, event.y_root
+        target = None
+        for card in self.app.cards:
+            if card is self:
+                continue
+            cx = card.winfo_rootx()
+            cy = card.winfo_rooty()
+            cw = card.winfo_width()
+            ch = card.winfo_height()
+            if cx <= x <= cx + cw and cy <= y <= cy + ch:
+                target = card
+                break
+
+        # Highlight target
+        for card in self.app.cards:
+            if card is self:
+                continue
+            if card is target:
+                card.configure(highlightbackground=ACCENT)
+            else:
+                card.configure(highlightbackground=BORDER)
+
+    def _card_drag_release(self, event):
+        if not getattr(self, "_dragging", False):
+            return
+        self._dragging = False
+        self.configure(highlightbackground=BORDER)
+
+        # Find drop target
+        x, y = event.x_root, event.y_root
+        target = None
+        for card in self.app.cards:
+            if card is self:
+                continue
+            cx = card.winfo_rootx()
+            cy = card.winfo_rooty()
+            cw = card.winfo_width()
+            ch = card.winfo_height()
+            if cx <= x <= cx + cw and cy <= y <= cy + ch:
+                target = card
+                break
+
+        # Reset all highlights
+        for card in self.app.cards:
+            card.configure(highlightbackground=BORDER)
+
+        if target:
+            self.app._swap_cards(self, target)
 
     def _bind_long_press(self, widget):
             # Only bind on non-interactive widgets to avoid blocking text entry
@@ -1464,6 +1711,26 @@ class PingApp(tk.Tk):
         save_hosts([c.host for c in self.cards])
         self._set_status(f"Deleted {card.host.get('vm_name', '')}", RED)
 
+    def _swap_cards(self, card_a, card_b):
+        cards = self.app.cards if hasattr(self, "app") else self.cards
+        idx_a = self.cards.index(card_a)
+        idx_b = self.cards.index(card_b)
+
+        # Swap hosts
+        card_a.host, card_b.host = card_b.host, card_a.host
+
+        # Refresh display of both cards
+        for card in (card_a, card_b):
+            card.vm_var.set(card.host.get("vm_name") or "VM Name")
+            card.ip_var.set(card.host.get("ip") or "0.0.0.0")
+            card._reset_stats()
+            card._apply_dim()
+            if card.host.get("ip"):
+                card.after(100, card._ping_single)
+
+        save_hosts([c.host for c in self.cards])
+        self._set_status(f"Swapped {card_a.host.get('vm_name','')} ↔ {card_b.host.get('vm_name','')}", ACCENT)
+
 
     def _dark_titlebar_for(self, win):
         try:
@@ -1513,6 +1780,13 @@ class PingApp(tk.Tk):
         self.cards         = []
         self._hosts_data   = load_hosts()
         self._build_ui()
+        self._ui_hidden = False
+        self._pinging_all = False
+
+        self._idle_job = None
+        self._ui_hidden = False
+
+
         self.after(100, self._dark_titlebar)
         self.after(500, self._ping_all)
 
@@ -1717,10 +1991,13 @@ class PingApp(tk.Tk):
 
         modal.bind("<Escape>", lambda _: modal.destroy())
 
+
     def _build_ui(self):
         # ── Header ──
-        hdr = tk.Frame(self, bg=BG, pady=14, padx=18)
-        hdr.pack(fill="x")
+        self.hdr = tk.Frame(self, bg=BG, pady=14, padx=18)
+        self.hdr.pack(fill="x")
+
+        hdr = self.hdr
 
         left_hdr = tk.Frame(hdr, bg=BG)
         left_hdr.pack(side="left")
@@ -1799,20 +2076,37 @@ class PingApp(tk.Tk):
             bio_btn.config(bg=ACCENT)
         bio_btn.bind("<Enter>", bio_enter)
         bio_btn.bind("<Leave>", bio_leave)
+        
 
         # PING ALL button with hover effect
-        self.ping_all_btn = tk.Button(right_hdr, text="  PING ALL  ",
-                  font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
-                  activeforeground=BG, activebackground="#79b8ff",
-                  relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
-                  command=self._ping_all)
+        self.ping_all_btn = tk.Button(
+            right_hdr,
+            text="  PING ALL  ",
+            font=("Consolas", 9, "bold"),
+            fg=BG,
+            bg=ACCENT,
+            activeforeground=BG,
+            activebackground="#79b8ff",
+            relief="flat",
+            bd=0,
+            padx=10,
+            pady=5,
+            cursor="hand2",
+            command=self._ping_all,
+        )
+
         self.ping_all_btn.pack(side="left")
-        
-        # Hover effect for ping all button
+
         def ping_all_enter(e):
+            if self._ui_hidden:
+                return
             self.ping_all_btn.config(bg="#79b8ff")
+
         def ping_all_leave(e):
+            if self._ui_hidden:
+                return
             self.ping_all_btn.config(bg=ACCENT)
+
         self.ping_all_btn.bind("<Enter>", ping_all_enter)
         self.ping_all_btn.bind("<Leave>", ping_all_leave)
 
@@ -1950,30 +2244,112 @@ class PingApp(tk.Tk):
         self.misc._ping_all()
         threading.Thread(target=self._ping_thread, args=(active,), daemon=True).start()
 
+    def _ping_all_safe(self):
+        if getattr(self, "_pinging_all", False):
+            return
+
+        try:
+            self._ping_all()
+        finally:
+            self._pinging_all = False
+
     def _ping_thread(self, cards):
         done = [0]
         lock = threading.Lock()
+        
         def one(card):
-            def on_dot(idx, success):
-                self.after(0, card._update_dot, idx, success)
-            res = ping_host(card.host["ip"], PING_COUNT, dot_callback=on_dot)
-            self.after(0, card.update_result, res)
+            target   = (card.host.get("ip") or "").strip().lower()
+            port_val = (card.host.get("port") or "").strip()
+            ep       = (card.host.get("endpoint") or "").strip()
             
-            # Check port if configured
-            if card.host.get("port"):
-                port_result = check_port(card.host["ip"], card.host["port"])
-                self.after(0, card._update_port_status, port_result)
+            is_raw_ip  = bool(re.match(r"^\d{1,3}(\.\d{1,3}){3}$", target))
+            has_alpha  = bool(re.search(r"[a-z]", target))
+            is_domain  = has_alpha and not is_raw_ip
+
+            if is_domain:
+                active_port = port_val if port_val else "443"
+                
+                success_count = 0
+                total_time = 0
+                valid_times_count = 0
+                last_http_result = {}
+
+                # 10x packet loop simulation over HTTP
+                for idx in range(PING_COUNT):
+                    http_result = check_http(target, active_port, ep)
+                    last_http_result = http_result
+                    
+                    is_ok = http_result.get("status") == "SUCCESS" or "200" in str(http_result.get("status_code", ""))
+                    
+                    if is_ok:
+                        success_count += 1
+                        r_time_str = http_result.get("response_time", "").replace("ms", "").strip()
+                        if r_time_str.isdigit():
+                            total_time += int(r_time_str)
+                            valid_times_count += 1
+                    
+                    self.after(0, card._update_dot, idx, is_ok)
+
+                # Compute loop summary details
+                loss_pct = int(((PING_COUNT - success_count) / PING_COUNT) * 100)
+                true_avg_ms = f"{int(total_time / valid_times_count)}ms" if valid_times_count > 0 else "—"
+
+                if success_count > 0:
+                    # Header metrics setup
+                    self.after(0, card.update_result, {
+                        "status": "UP", 
+                        "avg": "—", 
+                        "loss": loss_pct, 
+                        "recv": success_count
+                    })
+                    
+                    # Clean label match for the PORT widget column
+                    self.after(0, card._update_port_status, {
+                        "status": "OPEN", 
+                        "response_time": "Open" 
+                    })
+                    
+                    # Direct data-to-label alignment for the HTTP/S column
+                    status_code = last_http_result.get("status_code", "200")
+                    protocol = last_http_result.get("protocol", "HTTPS")
+                    self.after(0, card._update_http_status, {
+                        "status": "OK",
+                        "status_code": f"{status_code} ({true_avg_ms})", 
+                        "protocol": protocol,
+                        "response_time": true_avg_ms
+                    })
+                else:
+                    port_result = check_port(target, active_port)
+                    self.after(0, card._update_port_status, port_result)
+                    self.after(0, card.update_result, {
+                        "status": "DOWN", 
+                        "avg": "—", 
+                        "loss": 100, 
+                        "recv": 0
+                    })
             
-            # Check HTTP if configured
-            if card.host.get("port"):
-                endpoint = card.host.get("endpoint", "")
-                http_result = check_http(card.host["ip"], card.host["port"], endpoint)
-                self.after(0, card._update_http_status, http_result)
+            else:
+                # Fallback standard pipeline logic for raw IP targets
+                def on_dot(idx, success):
+                    self.after(0, card._update_dot, idx, success)
+                
+                res = ping_host(target, PING_COUNT, dot_callback=on_dot)
+                self.after(0, card.update_result, res)
+                
+                if port_val:
+                    port_result = check_port(target, port_val)
+                    self.after(0, card._update_port_status, port_result)
+                
+                self.after(0, card._update_http_status, {
+                    "status": "EMPTY", "response_time": "—",
+                    "status_code": "—", "protocol": "—"
+                })
             
             with lock:
                 done[0] += 1
                 if done[0] == len(cards):
                     self.after(0, self._ping_done)
+
         for c in cards:
             threading.Thread(target=one, args=(c,), daemon=True).start()
 
@@ -1983,7 +2359,7 @@ class PingApp(tk.Tk):
         now = datetime.datetime.now().strftime("%H:%M:%S")
         self._set_status(f"Last run: {now}", TEXT_DIM)
         if os.path.exists(LOG_PATH):
-            self.log_lbl.config(text="📋 log", fg=ORANGE)
+            self.log_lbl.config(text="", fg=ORANGE)
 
     def _toggle_settings(self):
         if self._settings_visible:
