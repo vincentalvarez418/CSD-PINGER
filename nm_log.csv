@@ -567,3 +567,4 @@ timestamp,what,server,ip,diagnostic
 2026-05-26 14:49:45,TIMEOUT | loss=100%,VM https://zamboangacity.gov.ph/08,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
 2026-05-26 14:49:45,TIMEOUT | loss=100%,LATINO,192.168.19.227,sev=red_blink
 2026-05-26 14:52:05,TIMEOUT | loss=100%,VM https://zamboangacity.gov.ph/08,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-26 16:02:37,UP | loss=50%,TEST,httpbin.org,"avg=—, recv=5/10, sev=orange_blink"
