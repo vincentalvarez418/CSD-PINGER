@@ -6,19 +6,19 @@
     "system_name": ""
   },
   {
+    "vm_name": "ETRACS",
+    "ip": "192.168.1.190",
+    "physical_name": "",
+    "system_name": "",
+    "port": ""
+  },
+  {
     "vm_name": "TEST BLANK",
     "ip": "192.168.1.137",
     "physical_name": "",
     "system_name": "",
     "port": "76",
     "endpoint": ""
-  },
-  {
-    "vm_name": "ETRACS",
-    "ip": "192.168.1.190",
-    "physical_name": "",
-    "system_name": "",
-    "port": ""
   },
   {
     "vm_name": "VM 06",
@@ -29,7 +29,7 @@
   },
   {
     "vm_name": "VM 08",
-    "ip": "google.com",
+    "ip": "youtube.com",
     "physical_name": "",
     "system_name": "",
     "port": "",
@@ -37,7 +37,7 @@
   },
   {
     "vm_name": "VM 08",
-    "ip": "youtube.com",
+    "ip": "google.com",
     "physical_name": "",
     "system_name": "",
     "port": "",

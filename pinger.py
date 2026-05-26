@@ -1545,15 +1545,53 @@ class HostCard(tk.Frame):
         self._drag_start_y = event.y_root
         self._dragging = False
 
+        # Create ghost label that follows cursor
+        self._drag_ghost = tk.Toplevel(self)
+        self._drag_ghost.overrideredirect(True)
+        self._drag_ghost.attributes("-alpha", 0.6)
+        self._drag_ghost.configure(bg=ACCENT)
+        tk.Label(
+            self._drag_ghost,
+            text=self.host.get("vm_name", "HOST"),
+            font=("Consolas", 10, "bold"),
+            fg=BG, bg=ACCENT,
+            padx=12, pady=6
+        ).pack()
+        self._drag_ghost.geometry(f"+{event.x_root + 12}+{event.y_root + 12}")
+        self._drag_ghost.withdraw()
+
     def _card_drag_motion(self, event):
         dx = abs(event.x_root - self._drag_start_x)
         dy = abs(event.y_root - self._drag_start_y)
         if not self._dragging and (dx > 8 or dy > 8):
             self._dragging = True
             self.configure(highlightbackground=ACCENT)
+            # Show ghost once dragging starts
+            if self._drag_ghost:
+                self._drag_ghost.deiconify()
+            # Cancel long-press if user starts dragging
+            if hasattr(self, "_lp_job") and self._lp_job:
+                self.after_cancel(self._lp_job)
+                self._lp_job = None
+                self.ts_lbl.config(
+                    text=self._last_ts if hasattr(self, "_last_ts") else "—",
+                    fg=TEXT_DIM
+                )
+                self.badge.config(
+                    text=self._last_badge if hasattr(self, "_last_badge") else " IDLE ",
+                    fg=self._last_badge_fg if hasattr(self, "_last_badge_fg") else ACCENT,
+                    bg=self._last_badge_bg if hasattr(self, "_last_badge_bg") else ACCENT_DIM
+                )
+                self.badge_frame.config(
+                    bg=self._last_badge_bg if hasattr(self, "_last_badge_bg") else ACCENT_DIM
+                )
 
         if not self._dragging:
             return
+
+        # Move ghost with cursor
+        if self._drag_ghost:
+            self._drag_ghost.geometry(f"+{event.x_root + 12}+{event.y_root + 12}")
 
         # Find which card we're hovering over
         x, y = event.x_root, event.y_root
@@ -1579,6 +1617,11 @@ class HostCard(tk.Frame):
                 card.configure(highlightbackground=BORDER)
 
     def _card_drag_release(self, event):
+        # Destroy ghost
+        if self._drag_ghost:
+            self._drag_ghost.destroy()
+            self._drag_ghost = None
+
         if not getattr(self, "_dragging", False):
             return
         self._dragging = False
