@@ -1163,7 +1163,8 @@ class HostCard(tk.Frame):
                                  font=("Consolas", 9), fg=TEXT_DIM,
                                  bg=CARD_BG, insertbackground=TEXT,
                                  relief="flat", bd=0, highlightthickness=0, width=16)
-        self.ip_entry.pack(side="left")
+        self.ip_entry.pack(side="left", fill="x", expand=True)
+        ip_row.pack(fill="x")
         self.ip_saved = tk.Label(ip_row, text="", font=("Consolas", 7), fg=GREEN, bg=CARD_BG)
         self.ip_saved.pack(side="left", padx=(3, 0))
 
@@ -1764,7 +1765,7 @@ class PingApp(tk.Tk):
 
     def __init__(self):
         super().__init__()
-        self.title("CSD NM")
+        self.title("CSD PINGER v.2a")
         self.configure(bg=BG)
         self.geometry("1200x760")
         self.resizable(True, True)
