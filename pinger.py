@@ -1069,6 +1069,7 @@ class HostCard(tk.Frame):
         self._blink_state = True
         self._cur_sev     = "green"
         self.configure(highlightbackground=BORDER, highlightthickness=1, padx=12, pady=22)
+        self.grid_propagate(False)
         self._build()
         self.after(50, self._apply_dim)
         self._rc_job = None
@@ -1174,7 +1175,8 @@ class HostCard(tk.Frame):
                 messages_enabled=False
             )
 
-            self._webview_widget.pack(fill="both", expand=True)
+            self._webview_widget.pack(fill="x", expand=False)
+            self._webview_widget.configure(height=200)
 
             self._webview_widget.load_url(url)
 
@@ -1198,6 +1200,9 @@ class HostCard(tk.Frame):
     def _build(self):
         self._content = tk.Frame(self, bg=CARD_BG)
         self._content.pack(fill="both", expand=True)
+        self._view_area = tk.Frame(self._content, bg=CARD_BG, height=130)
+        self._view_area.pack(fill="both", expand=True)
+        self._view_area.pack_propagate(False)
 
         # separate sibling frame
         self._web_frame = tk.Frame(
@@ -1209,7 +1214,7 @@ class HostCard(tk.Frame):
 
         self._web_frame.pack_propagate(False)
 
-        top = tk.Frame(self._content, bg=CARD_BG)
+        top = tk.Frame(self._view_area, bg=CARD_BG)
         top.pack(fill="x", pady=(0, 0))
 
         self.vm_entry, self.vm_var = self._ph_field(
@@ -1222,7 +1227,7 @@ class HostCard(tk.Frame):
                               font=("Consolas", 8, "bold"), fg=ACCENT, bg=ACCENT_DIM)
         self.badge.pack()
 
-        ip_row = tk.Frame(self._content, bg=CARD_BG)
+        ip_row = tk.Frame(self._view_area, bg=CARD_BG)
         ip_row.pack(fill="x", pady=(0, 0))
 
         stored_ip = self.host.get("ip", "") or ""
@@ -1241,7 +1246,7 @@ class HostCard(tk.Frame):
         self.ip_entry.bind("<Return>",     self._ip_save)
         self.ip_entry.bind("<KeyRelease>", self._ip_key)
 
-        phys_sys_row = tk.Frame(self._content, bg=CARD_BG)
+        phys_sys_row = tk.Frame(self._view_area, bg=CARD_BG)
         phys_sys_row.pack(fill="x", pady=(0, 0))
 
         self.phys_entry, _ = self._ph_field(
@@ -1271,9 +1276,9 @@ class HostCard(tk.Frame):
             ("Consolas", 8), fg_active=TEXT_DIM, width=10)
         self.endpoint_entry.pack(side="left")
 
-        tk.Frame(self._content, bg=BORDER, height=1).pack(fill="x", pady=(3, 3))
+        tk.Frame(self._view_area, bg=BORDER, height=1).pack(fill="x", pady=(3, 3))
 
-        stats = tk.Frame(self._content, bg=CARD_BG)
+        stats = tk.Frame(self._view_area, bg=CARD_BG)
         stats.pack(fill="x")
         self.stat_w = {}
         for lbl, key in [("AVERAGE PING", "avg"), ("LOSS", "loss"), ("PACKETS RECV", "recv"), ("PORT", "port_status"), ("HTTP/S", "http_status")]:
@@ -1286,7 +1291,7 @@ class HostCard(tk.Frame):
             v.pack()
             self.stat_w[key] = v
 
-        dot_row = tk.Frame(self._content, bg=CARD_BG)
+        dot_row = tk.Frame(self._view_area, bg=CARD_BG)
         dot_row.pack(fill="x", pady=(4, 0))
         self.dots = []
         for _ in range(PING_COUNT):
