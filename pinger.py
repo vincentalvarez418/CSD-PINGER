@@ -1162,12 +1162,19 @@ class HostCard(tk.Frame):
             return
 
         self._hide_webview()
-
         self._webview_showing = True
 
         self._content.pack_forget()
 
-        self._web_frame.pack(fill="both", expand=True)
+        # IMPORTANT: do NOT expand vertically
+        self._web_frame.pack(
+            fill="x",
+            expand=False,
+            pady=(4, 0)
+        )
+
+        # stable render height (this is the key)
+        self._web_frame.configure(height=200)
 
         try:
             self._webview_widget = HtmlFrame(
@@ -1175,8 +1182,14 @@ class HostCard(tk.Frame):
                 messages_enabled=False
             )
 
-            self._webview_widget.pack(fill="x", expand=False)
-            self._webview_widget.configure(height=200)
+            # IMPORTANT: allow renderer to use full frame
+            self._webview_widget.pack(fill="both", expand=True)
+
+            # ❌ REMOVE this completely:
+            # self._webview_widget.configure(height=200)
+
+            # zoom only controls density, not layout
+            self._webview_widget.html.configure(zoom=0.50)
 
             self._webview_widget.load_url(url)
 
