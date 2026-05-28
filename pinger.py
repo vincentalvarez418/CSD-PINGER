@@ -3,6 +3,13 @@ from tkinter import ttk
 import subprocess, platform, re, threading, datetime, json, os, sys, csv, socket
 from PIL import Image, ImageTk
 import ctypes
+
+try:
+    from tkinterweb import HtmlFrame
+    HAS_WEBVIEW = True
+except ImportError:
+    HAS_WEBVIEW = False
+
 try:
     import requests
     requests.packages.urllib3.disable_warnings(
@@ -1067,6 +1074,9 @@ class HostCard(tk.Frame):
         self._rc_job = None
         self._rc_step = 0
         self._rc_active = False
+        self._webview_job = None
+        self._webview_showing = False
+        self._webview_widget = None
         self._drag_start_x = 0
         self._drag_start_y = 0
         self._drag_ghost = None
@@ -1139,9 +1149,67 @@ class HostCard(tk.Frame):
         e.bind("<FocusOut>", focus_out)
         e.bind("<KeyRelease>", key_release)
         return e, var
+    def _schedule_webview(self, url):
+        if not HAS_WEBVIEW:
+            return
+        if self._webview_job:
+            self.after_cancel(self._webview_job)
+        self._webview_job = self.after(10000, lambda: self._show_webview(url))
+
+    def _show_webview(self, url):
+        if not HAS_WEBVIEW:
+            return
+
+        self._hide_webview()
+
+        self._webview_showing = True
+
+        self._content.pack_forget()
+
+        self._web_frame.pack(fill="both", expand=True)
+
+        try:
+            self._webview_widget = HtmlFrame(
+                self._web_frame,
+                messages_enabled=False
+            )
+
+            self._webview_widget.pack(fill="both", expand=True)
+
+            self._webview_widget.load_url(url)
+
+        except Exception as e:
+            print("WEBVIEW ERROR:", e)
+            self._hide_webview()
+            return
+
+        self._webview_job = self.after(30000, self._hide_webview)
+
+    def _hide_webview(self):
+        if not self._webview_showing:
+            return
+        self._webview_showing = False
+        self._web_frame.pack_forget()
+        if self._webview_widget:
+            self._webview_widget.destroy()
+            self._webview_widget = None
+        self._content.pack(fill="both", expand=True)
 
     def _build(self):
-        top = tk.Frame(self, bg=CARD_BG)
+        self._content = tk.Frame(self, bg=CARD_BG)
+        self._content.pack(fill="both", expand=True)
+
+        # separate sibling frame
+        self._web_frame = tk.Frame(
+            self,
+            bg=CARD_BG,
+            width=520,
+            height=260
+        )
+
+        self._web_frame.pack_propagate(False)
+
+        top = tk.Frame(self._content, bg=CARD_BG)
         top.pack(fill="x", pady=(0, 0))
 
         self.vm_entry, self.vm_var = self._ph_field(
@@ -1154,7 +1222,7 @@ class HostCard(tk.Frame):
                               font=("Consolas", 8, "bold"), fg=ACCENT, bg=ACCENT_DIM)
         self.badge.pack()
 
-        ip_row = tk.Frame(self, bg=CARD_BG)
+        ip_row = tk.Frame(self._content, bg=CARD_BG)
         ip_row.pack(fill="x", pady=(0, 0))
 
         stored_ip = self.host.get("ip", "") or ""
@@ -1173,7 +1241,7 @@ class HostCard(tk.Frame):
         self.ip_entry.bind("<Return>",     self._ip_save)
         self.ip_entry.bind("<KeyRelease>", self._ip_key)
 
-        phys_sys_row = tk.Frame(self, bg=CARD_BG)
+        phys_sys_row = tk.Frame(self._content, bg=CARD_BG)
         phys_sys_row.pack(fill="x", pady=(0, 0))
 
         self.phys_entry, _ = self._ph_field(
@@ -1203,9 +1271,9 @@ class HostCard(tk.Frame):
             ("Consolas", 8), fg_active=TEXT_DIM, width=10)
         self.endpoint_entry.pack(side="left")
 
-        tk.Frame(self, bg=BORDER, height=1).pack(fill="x", pady=(3, 3))
+        tk.Frame(self._content, bg=BORDER, height=1).pack(fill="x", pady=(3, 3))
 
-        stats = tk.Frame(self, bg=CARD_BG)
+        stats = tk.Frame(self._content, bg=CARD_BG)
         stats.pack(fill="x")
         self.stat_w = {}
         for lbl, key in [("AVERAGE PING", "avg"), ("LOSS", "loss"), ("PACKETS RECV", "recv"), ("PORT", "port_status"), ("HTTP/S", "http_status")]:
@@ -1218,7 +1286,7 @@ class HostCard(tk.Frame):
             v.pack()
             self.stat_w[key] = v
 
-        dot_row = tk.Frame(self, bg=CARD_BG)
+        dot_row = tk.Frame(self._content, bg=CARD_BG)
         dot_row.pack(fill="x", pady=(4, 0))
         self.dots = []
         for _ in range(PING_COUNT):
@@ -1226,7 +1294,7 @@ class HostCard(tk.Frame):
             d.pack(side="left", padx=1)
             self.dots.append(d)
 
-        bot = tk.Frame(self, bg=CARD_BG)
+        bot = tk.Frame(self._content, bg=CARD_BG)
         bot.pack(fill="x", pady=(3, 0))
         self.ts_lbl = tk.Label(bot, text="—", font=("Consolas", 7), fg=TEXT_DIM, bg=CARD_BG)
         self.ts_lbl.pack(side="right")
@@ -1531,6 +1599,13 @@ class HostCard(tk.Frame):
             what = f"{status} | loss={loss}%"
             diag = f"avg={avg}, recv={recv}/{PING_COUNT}, sev={sev}"
             log_event(what, self.host.get("vm_name", ""), self.host.get("ip", ""), diag)
+
+        target = (self.host.get("ip") or "").strip()
+        is_domain = bool(re.search(r"[a-zA-Z]", target)) and not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", target)
+        if is_domain and status == "UP" and not self._webview_showing:
+            port = (self.host.get("port") or "443").strip()
+            scheme = "https" if port == "443" else "http"
+            self._schedule_webview(f"{scheme}://{target}")
 
     def _init_card_drag(self, widget):
         if isinstance(widget, (tk.Frame, tk.Label)):
