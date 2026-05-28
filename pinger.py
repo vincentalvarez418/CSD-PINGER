@@ -1061,7 +1061,7 @@ class HostCard(tk.Frame):
         self._blink_job   = None
         self._blink_state = True
         self._cur_sev     = "green"
-        self.configure(highlightbackground=BORDER, highlightthickness=1, padx=12, pady=18)
+        self.configure(highlightbackground=BORDER, highlightthickness=1, padx=12, pady=22)
         self._build()
         self.after(50, self._apply_dim)
         self._rc_job = None
@@ -1834,6 +1834,12 @@ class PingApp(tk.Tk):
         self.after(100, self._dark_titlebar)
         self.after(500, self._ping_all)
 
+        self._idle_restore_job = None
+        self.bind("<Motion>", self._reset_idle_timer, add="+")
+        self.bind_all("<KeyPress>", self._reset_idle_timer, add="+")
+        self.bind_all("<ButtonPress>", self._reset_idle_timer, add="+")
+        self.after(5000, self._enter_idle)
+
     @property
     def _interval(self):
         return INTERVAL_CYCLE[self._interval_idx][1]
@@ -2036,11 +2042,29 @@ class PingApp(tk.Tk):
         modal.bind("<Escape>", lambda _: modal.destroy())
 
 
+    def _reset_idle_timer(self, event=None):
+        if self._idle_restore_job:
+            self.after_cancel(self._idle_restore_job)
+            self._idle_restore_job = None
+        self._exit_idle()
+        self._idle_restore_job = self.after(5000, self._enter_idle)
+
+    def _enter_idle(self):
+        self._ui_hidden = True
+        self.hdr.pack_forget()
+
+    def _exit_idle(self):
+        if not getattr(self, "_ui_hidden", False):
+            return
+        self._ui_hidden = False
+        self.hdr.pack(fill="x", after=self._hdr_anchor)
+            
     def _build_ui(self):
         # ── Header ──
+        self._hdr_anchor = tk.Frame(self, bg=BG, height=0)
+        self._hdr_anchor.pack(fill="x")
         self.hdr = tk.Frame(self, bg=BG, pady=14, padx=18)
         self.hdr.pack(fill="x")
-
         hdr = self.hdr
 
         left_hdr = tk.Frame(hdr, bg=BG)
