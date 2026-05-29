@@ -594,12 +594,11 @@ class MiscSidebar(tk.Frame):
         self.rows = []
         self._drag_row = None
         self._auto_scroll_job = None
-        self._scroll_pause_until = 0
         self._build()
         self._load()
-        # Start continuous auto-scroll after initial pings settle
+        self._scroll_direction = 1
         self.after(4000, self._auto_scroll_tick)
-
+        
     def _build(self):
         hdr = tk.Frame(self, bg=BG)
         hdr.pack(fill="x", pady=(0, 6))
@@ -686,16 +685,10 @@ class MiscSidebar(tk.Frame):
             return False
 
     def _auto_scroll_tick(self):
-        import time
-        now = time.time()
-
-        # Skip if mouse is hovering (let user interact)
-        if self._is_mouse_over():
-            self._auto_scroll_job = self.after(200, self._auto_scroll_tick)
+        if not self.canvas.winfo_exists():
             return
 
-        # Skip if in a pause window (top/bottom dwell)
-        if now < self._scroll_pause_until:
+        if self._is_mouse_over():
             self._auto_scroll_job = self.after(200, self._auto_scroll_tick)
             return
 
@@ -706,16 +699,18 @@ class MiscSidebar(tk.Frame):
             self._auto_scroll_job = self.after(500, self._auto_scroll_tick)
             return
 
-        # Reached the bottom — pause, then jump to top
+        # Reverse direction at boundaries
         if bottom >= 1.0:
-            self.canvas.yview_moveto(0.0)
-            self._scroll_pause_until = now + 3.0  # 3s dwell at top
-            self._auto_scroll_job = self.after(200, self._auto_scroll_tick)
-            return
+            self._scroll_direction = -1
+        elif top <= 0.0:
+            self._scroll_direction = 1
 
-        # Normal scroll: move down by a small amount
-        self.canvas.yview_scroll(1, "units")
-        self._auto_scroll_job = self.after(30, self._auto_scroll_tick)
+        # Move by a tiny fraction instead of whole units
+        step = 0.001 * self._scroll_direction
+        new_top = max(0.0, min(1.0, top + step))
+        self.canvas.yview_moveto(new_top)
+
+        self._auto_scroll_job = self.after(16, self._auto_scroll_tick)
 
     def _ping_all(self):
         for row in self.rows:
@@ -790,9 +785,20 @@ class MiscSidebar(tk.Frame):
         row = MiscRow(self.list_frame, entry, self)
         row.pack(fill="x", pady=(0, 4))
         self.rows.append(row)
-        # Auto-scroll sidebar to show newly added row
         self.after(50, lambda: self.canvas.yview_moveto(1.0))
         return row
+    
+    def _rebuild_duplicates(self):
+        # Remove old duplicates
+        for w in self._duplicates:
+            w.destroy()
+        self._duplicates = []
+
+        # Clone each real row as a visual-only duplicate
+        for entry in [r.entry for r in self.rows]:
+            dup = MiscRow(self.list_frame, entry, self)
+            dup.pack(fill="x", pady=(0, 4))
+            self._duplicates.append(dup)
 
     def _add_entry(self):
         name = self._name_var.get().strip()
@@ -1150,6 +1156,13 @@ class HostCard(tk.Frame):
         e.bind("<FocusOut>", focus_out)
         e.bind("<KeyRelease>", key_release)
         return e, var
+    
+    def _capture_natural_height(self):
+        self.update_idletasks()
+        h = self.winfo_height()
+        if h > 10:
+            self._locked_height = h
+
     def _schedule_webview(self, url):
         if not HAS_WEBVIEW:
             return
@@ -1157,41 +1170,141 @@ class HostCard(tk.Frame):
             self.after_cancel(self._webview_job)
         self._webview_job = self.after(10000, lambda: self._show_webview(url))
 
+
+    def _animate_dot(self):
+        # Safety check: if the webview was hidden or rebuilt, stop animating
+        if not self._webview_showing or not hasattr(self, "_status_dot") or not self._status_dot.winfo_exists():
+            return
+
+        # Toggle the state
+        self._blink_state = not self._blink_state
+        
+        # Switch between the bright green and the dark background color
+        current_fg = GREEN if self._blink_state else "#0a0f1a"
+        
+        try:
+            self._status_dot.configure(fg=current_fg)
+        except Exception:
+            return # Catch-all in case it's destroyed mid-animation
+
+        # Schedule the next toggle in 500ms (0.5 seconds)
+        self.after(500, self._animate_dot)
+
     def _show_webview(self, url):
         if not HAS_WEBVIEW:
             return
 
         self._hide_webview()
-        self._webview_showing = True
 
+        # Lock the card height exactly once using its natural rendered size
+        if not self._locked_height or self._locked_height < 10:
+            return
+
+        self.configure(height=self._locked_height)
+        self.grid_propagate(False)
+        self.pack_propagate(False)
+
+        self._webview_showing = True
         self._content.pack_forget()
 
-        # IMPORTANT: do NOT expand vertically
-        self._web_frame.pack(
-            fill="x",
-            expand=False,
-            pady=(4, 0)
-        )
+        for child in self._web_frame.winfo_children():
+            child.destroy()
 
-        # stable render height (this is the key)
-        self._web_frame.configure(height=200)
+        self._web_frame.configure(height=self._locked_height, width=self.winfo_width())
+        self._web_frame.pack(fill="x", expand=False)
+        self._web_frame.pack_propagate(False)
+
+        # ── Cosmetic header bar ──
+        self._web_header = tk.Frame(self._web_frame, bg="#0a0f1a", height=22)
+        self._web_header.pack(fill="x")
+        self._web_header.pack_propagate(False)
+
+
+        self._status_dot = tk.Label(
+            self._web_header,
+            text="●",
+            font=("Consolas", 7),
+            fg=GREEN,
+            bg="#0a0f1a"
+        )
+        self._status_dot.pack(side="left", padx=(8, 4))
+
+        # Start the blinking effect
+        self._blink_state = True
+        self._animate_dot()
+
+        domain = url.split("//")[-1].split("/")[0]
+        tk.Label(
+            self._web_header,
+            text=domain,
+            font=("Consolas", 7, "bold"),
+            fg=TEXT_DIM,
+            bg="#0a0f1a",
+            anchor="w"
+        ).pack(side="left", fill="x", expand=True)
+
+        tk.Label(
+            self._web_header,
+            text="LIVE",
+            font=("Consolas", 6, "bold"),
+            fg="#10b981",
+            bg="#0a0f1a"
+        ).pack(side="right", padx=(0, 8))
 
         try:
             self._webview_widget = HtmlFrame(
                 self._web_frame,
-                messages_enabled=False
+                messages_enabled=False,
+                vertical_scrollbar=False,
+                horizontal_scrollbar=False,
             )
-
-            # IMPORTANT: allow renderer to use full frame
             self._webview_widget.pack(fill="both", expand=True)
-
-            # ❌ REMOVE this completely:
-            # self._webview_widget.configure(height=200)
-
-            # zoom only controls density, not layout
-            self._webview_widget.html.configure(zoom=0.50)
-
+            self._webview_widget.html.configure(zoom=0.40)
+            # Force-hide any scrollbars tkinterweb may have created
+            try:
+                for child in self._webview_widget.winfo_children():
+                    cls = child.winfo_class().lower()
+                    if "scrollbar" in cls or "scroll" in cls:
+                        child.pack_forget()
+                        child.place_forget()
+                        child.grid_forget()
+                        child.configure(width=0)
+            except Exception:
+                pass
             self._webview_widget.load_url(url)
+            # Suppress any scrollbar that renders after load
+            def _kill_scrollbars():
+                try:
+                    for child in self._webview_widget.winfo_children():
+                        if "scrollbar" in child.winfo_class().lower():
+                            child.place_forget()
+                            child.pack_forget()
+                            child.grid_forget()
+                        for sub in child.winfo_children():
+                            if "scrollbar" in sub.winfo_class().lower():
+                                sub.place_forget()
+                                sub.pack_forget()
+                                sub.grid_forget()
+                except Exception:
+                    pass
+            self.after(1000, _kill_scrollbars)
+            self.after(2000, _kill_scrollbars)
+            self.after(5000, _kill_scrollbars)
+            # Also kill tkinterweb's named internal scrollbar
+            def _kill_vbar():
+                try:
+                    if hasattr(self._webview_widget, "vbar"):
+                        self._webview_widget.vbar.pack_forget()
+                        self._webview_widget.vbar.place_forget()
+                    if hasattr(self._webview_widget, "hbar"):
+                        self._webview_widget.hbar.pack_forget()
+                        self._webview_widget.hbar.place_forget()
+                except Exception:
+                    pass
+            self.after(100, _kill_vbar)
+            self.after(500, _kill_vbar)
+            self.after(1500, _kill_vbar)
+            self.after(3000, _kill_vbar)
 
         except Exception as e:
             print("WEBVIEW ERROR:", e)
@@ -1209,11 +1322,13 @@ class HostCard(tk.Frame):
             self._webview_widget.destroy()
             self._webview_widget = None
         self._content.pack(fill="both", expand=True)
+        self.grid_propagate(False)
+        self.pack_propagate(False)
 
     def _build(self):
         self._content = tk.Frame(self, bg=CARD_BG)
         self._content.pack(fill="both", expand=True)
-        self._view_area = tk.Frame(self._content, bg=CARD_BG, height=130)
+        self._view_area = tk.Frame(self._content, bg=CARD_BG, height=155)
         self._view_area.pack(fill="both", expand=True)
         self._view_area.pack_propagate(False)
 
@@ -1222,10 +1337,10 @@ class HostCard(tk.Frame):
             self,
             bg=CARD_BG,
             width=520,
-            height=260
+            height=0
         )
-
         self._web_frame.pack_propagate(False)
+        self._locked_height = None
 
         top = tk.Frame(self._view_area, bg=CARD_BG)
         top.pack(fill="x", pady=(0, 0))
@@ -1274,7 +1389,7 @@ class HostCard(tk.Frame):
         tk.Label(phys_sys_row, text=")", font=("Consolas", 8), fg=TEXT_DIM, bg=CARD_BG).pack(side="left")
 
         # ── Port and HTTP fields ──
-        port_http_row = tk.Frame(self, bg=CARD_BG)
+        port_http_row = tk.Frame(self._view_area, bg=CARD_BG)
         port_http_row.pack(fill="x", pady=(4, 0))
 
         tk.Label(port_http_row, text="PORT:", font=("Consolas", 7), fg=TEXT_DIM, bg=CARD_BG).pack(side="left", padx=(0, 3))
@@ -1321,6 +1436,8 @@ class HostCard(tk.Frame):
         self._bind_long_press(self)
         self._bind_right_hold(self)
         self._init_card_drag(self)
+        # Capture natural height before any webview activity
+        self.after(200, self._capture_natural_height)
 
     def _ip_focus_in(self, _=None):
         if self.ip_var.get() in ("Enter IP…", "0.0.0.0") and not self.host.get("ip"):
@@ -1885,8 +2002,11 @@ class PingApp(tk.Tk):
     def _dark_titlebar(self):
         try:
             DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+            hwnd = ctypes.windll.user32.GetParent(self.winfo_id())
+            if not hwnd:
+                hwnd = self.winfo_id()
             ctypes.windll.dwmapi.DwmSetWindowAttribute(
-                ctypes.windll.user32.GetForegroundWindow(),
+                hwnd,
                 DWMWA_USE_IMMERSIVE_DARK_MODE,
                 ctypes.byref(ctypes.c_int(1)),
                 ctypes.sizeof(ctypes.c_int)
