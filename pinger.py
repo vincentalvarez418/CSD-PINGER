@@ -1206,23 +1206,28 @@ class HostCard(tk.Frame):
         self._webview_showing = True
         self._content.pack_forget()
 
-        # --- REWRITTEN CLEANUP ---
+        # Cleanup old elements
         if hasattr(self, "_web_header") and self._web_header.winfo_exists():
             self._web_header.destroy()
+        if hasattr(self, "_loading_overlay"):
+            self._loading_overlay.destroy()
 
         self._web_frame.configure(height=self._locked_height, width=current_width)
         self._web_frame.pack(fill="x", expand=False)
         self._web_frame.pack_propagate(False)
 
+        # ── LOADING SPINNER (Overlay) ──
+        self._loading_overlay = tk.Frame(self._web_frame, bg="#0a0f1a")
+        self._loading_overlay.place(relx=0.5, rely=0.5, anchor="center")
+        tk.Label(self._loading_overlay, text="○ Loading...", font=("Consolas", 10), fg=TEXT_DIM, bg="#0a0f1a").pack()
+
         # ── Cosmetic header bar ──
         self._web_header = tk.Frame(self._web_frame, bg="#0a0f1a", height=22)
-        self._web_header.pack(fill="x")
+        self._web_header.pack(side="top", fill="x")
         self._web_header.pack_propagate(False)
 
         # Status Dot
-        self._status_dot = tk.Label(self._web_header, text="●", font=("Consolas", 7), fg=GREEN, bg="#0a0f1a")
-        self._status_dot.pack(side="left", padx=(8, 4))
-        self._blink_state = True
+        tk.Label(self._web_header, text="●", font=("Consolas", 7), fg=GREEN, bg="#0a0f1a").pack(side="left", padx=(8, 4))
         self._animate_dot()
 
         # Domain Text
@@ -1232,7 +1237,7 @@ class HostCard(tk.Frame):
         # LIVE Indicator
         tk.Label(self._web_header, text="LIVE", font=("Consolas", 6, "bold"), fg="#10b981", bg="#0a0f1a").pack(side="right", padx=(0, 8))
 
-        # ── Fast Hot-Swapping Background Task ──
+        # ── Background Task ──
         import threading
         
         def fetch_preview():
@@ -1244,86 +1249,52 @@ class HostCard(tk.Frame):
                 is_slow_local_site = any(k in url.lower() for k in ["gov.ph", "zamboanga", "httpbin"])
 
                 with sync_playwright() as p:
-                    browser = p.chromium.launch(
-                        headless=True,
-                        args=[
-                            "--no-sandbox", 
-                            "--disable-setuid-sandbox",
-                            "--disable-gl-drawing-for-tests",
-                        ]
-                    )
-                    
+                    browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-gl-drawing-for-tests"])
                     context = browser.new_context(viewport={"width": 1440, "height": 900})
                     page = context.new_page()
                     
                     if not is_slow_local_site:
-                        def route_interceptor(route):
-                            if route.request.resource_type in ["media", "websocket"]:
-                                route.abort()
-                            elif "analytics" in route.request.url or "partner" in route.request.url:
-                                route.abort()
-                            else:
-                                route.continue_()
-                        page.route("**/*", route_interceptor)
+                        page.route("**/*", lambda route: route.abort() if route.request.resource_type in ["media", "websocket"] or "analytics" in route.request.url else route.continue_())
                     
                     timeout_limit = 5000 if is_slow_local_site else 9000
-                    wait_trigger = "commit" if is_slow_local_site else "networkidle"
-
                     try:
-                        page.goto(url, wait_until=wait_trigger, timeout=timeout_limit)
-                    except Exception:
-                        pass
+                        page.goto(url, wait_until="commit" if is_slow_local_site else "networkidle", timeout=timeout_limit)
+                    except Exception: pass
                     
-                    # ── PERFECT ZOOM FACTOR & CORNER ALIGNMENT ──
+                    # ── CSS INJECTION & ALIGNMENT ──
                     try:
+                        if is_slow_local_site:
+                            page.add_style_tag(content=".header-banner, [id*='banner'], [class*='banner'], header { display: none !important; }")
                         page.evaluate("""() => {
-                            document.documentElement.style.margin = '0';
-                            document.documentElement.style.padding = '0';
-                            document.body.style.margin = '0';
-                            document.body.style.padding = '0';
-                            
                             document.body.style.transform = 'scale(0.90)'; 
                             document.body.style.transformOrigin = 'top left';
                             document.body.style.width = '111.11%';
-                            
-                            // FIXED: Render from absolute top-left corner
                             window.scrollTo(0, 0);
                         }""")
-                    except Exception:
-                        pass
+                    except Exception: pass
 
-                    if not is_slow_local_site:
-                        page.wait_for_timeout(800)
-                    else:
-                        page.wait_for_timeout(1500)
-                    
+                    page.wait_for_timeout(1500 if is_slow_local_site else 800)
                     img_data = page.screenshot(type="jpeg", quality=60)
                     context.close()
                     browser.close()
 
                 img = Image.open(io.BytesIO(img_data))
-                
-                target_w = current_width
-                target_h = self._locked_height - 22
-                img = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
-                
+                img = img.resize((current_width, self._locked_height - 22), Image.Resampling.LANCZOS)
                 self.after(0, lambda: display_image(img))
-
             except Exception as e:
                 print(f"PLAYWRIGHT FETCH ERROR ({url}):", e)
 
         def display_image(pil_img):
             from PIL import ImageTk
-            if not self._webview_showing:
-                return
-                
+            if not self._webview_showing: return
+            
+            if hasattr(self, "_loading_overlay"): self._loading_overlay.destroy()
             for child in self._web_frame.winfo_children():
-                if child != self._web_header:
-                    child.destroy()
+                if child != self._web_header: child.destroy()
                     
             self._preview_photo = ImageTk.PhotoImage(pil_img)
             img_label = tk.Label(self._web_frame, image=self._preview_photo, bg="#0a0f1a")
-            img_label.pack(fill="both", expand=True)
+            img_label.pack(side="top", fill="both", expand=True)
 
         threading.Thread(target=fetch_preview, daemon=True).start()
 

@@ -34,5 +34,13 @@
     "system_name": "",
     "port": "",
     "endpoint": ""
+  },
+  {
+    "vm_name": "VM 06",
+    "ip": "google.com",
+    "physical_name": "",
+    "system_name": "",
+    "port": "",
+    "endpoint": ""
   }
 ]
