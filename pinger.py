@@ -1210,12 +1210,14 @@ class HostCard(tk.Frame):
             self._content_container.destroy()
 
         self._web_frame.configure(height=self._locked_height, width=current_width)
+        self.configure(padx=0, pady=0)
         self._web_frame.pack(fill="both", expand=True)
         self._web_frame.pack_propagate(False)
 
-        # 2. Add header at the top (Reduced height to 20px, packed with slight top padding)
-        self._web_header = tk.Frame(self._web_frame, bg="#0a0f1a", height=20)
-        self._web_header.pack(side="top", fill="x", padx=0, pady=(0, 2))
+        self._web_header = tk.Frame(self._web_frame, bg="#0a0f1a", height=26)
+        self._web_header.pack(side="top", fill="x")
+
+        tk.Frame(self._web_frame, bg=BORDER, height=1).pack(side="top", fill="x")
         self._web_header.pack_propagate(False)
 
         # Status Dot (Vertically centered by placing in the header frame)
@@ -1269,7 +1271,7 @@ class HostCard(tk.Frame):
                     
                     page.evaluate("""() => {
                         const style = document.createElement('style');
-                        style.innerHTML = `body { margin: 0 !important; padding: 0 !important; transform: scale(0.90); transform-origin: top center; position: relative; top: 95px; width: 100% !important; }`;
+                        style.innerHTML = `body { margin: 0 !important; padding: 0 !important; transform: scale(0.90); transform-origin: top center; position: relative; top: 10px; width: 100% !important; }`;
                         document.head.appendChild(style);
                         window.scrollTo(0, 0);
                     }""")
@@ -1277,7 +1279,15 @@ class HostCard(tk.Frame):
                     img_data = page.screenshot(type="jpeg", quality=60, full_page=False)
                     context.close(); browser.close()
 
-                img = Image.open(io.BytesIO(img_data)).resize((current_width, self._locked_height - 26), Image.Resampling.LANCZOS)
+                img = Image.open(io.BytesIO(img_data))
+                target_h = self._locked_height - 22
+                ratio = target_h / img.height
+                target_w = int(img.width * ratio)
+
+                img = img.resize(
+                    (target_w, target_h),
+                    Image.Resampling.LANCZOS
+                )
                 self.after(0, lambda: display_image(img))
             except Exception as e: print(f"PLAYWRIGHT FETCH ERROR: {e}")
 
@@ -1287,7 +1297,12 @@ class HostCard(tk.Frame):
             if hasattr(self, "_loading_overlay"): self._loading_overlay.destroy()
             for child in self._content_container.winfo_children(): child.destroy()
             self._preview_photo = ImageTk.PhotoImage(pil_img)
-            tk.Label(self._content_container, image=self._preview_photo, bg="#0a0f1a").pack(side="top", fill="both", expand=True, pady=0)
+            
+            tk.Label(
+                self._content_container,
+                image=self._preview_photo,
+                bg="#0a0f1a"
+            ).pack(expand=True)
 
         threading.Thread(target=fetch_preview, daemon=True).start()
         if hasattr(self, "_webview_job") and self._webview_job: self.after_cancel(self._webview_job)
@@ -1307,6 +1322,7 @@ class HostCard(tk.Frame):
                 pass
             self._webview_widget = None
         self._content.pack(fill="both", expand=True)
+        self.configure(padx=12, pady=22)
         self.grid_propagate(False)
         self.pack_propagate(False)
 
@@ -2640,7 +2656,13 @@ class PingApp(tk.Tk):
         fs = self.attributes("-fullscreen")
         self.attributes("-fullscreen", not fs)
         if not fs:
-            self.bind("<Escape>", lambda _: self.attributes("-fullscreen", False))
+            self.bind("<Escape>", lambda _: self._exit_fullscreen())
+        else:
+            self.after(100, self._dark_titlebar)
+
+    def _exit_fullscreen(self):
+        self.attributes("-fullscreen", False)
+        self.after(100, self._dark_titlebar)
 
     def _schedule_auto(self):
         if self._running:

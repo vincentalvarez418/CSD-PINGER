@@ -50,5 +50,29 @@
     "system_name": "",
     "port": "",
     "endpoint": ""
+  },
+  {
+    "vm_name": "VM 08",
+    "ip": "",
+    "physical_name": "",
+    "system_name": "",
+    "port": "",
+    "endpoint": ""
+  },
+  {
+    "vm_name": "VM 09",
+    "ip": "",
+    "physical_name": "",
+    "system_name": "",
+    "port": "",
+    "endpoint": ""
+  },
+  {
+    "vm_name": "VM 10",
+    "ip": "",
+    "physical_name": "",
+    "system_name": "",
+    "port": "",
+    "endpoint": ""
   }
 ]
