@@ -42,5 +42,13 @@
     "system_name": "",
     "port": "",
     "endpoint": ""
+  },
+  {
+    "vm_name": "asd",
+    "ip": "",
+    "physical_name": "",
+    "system_name": "",
+    "port": "",
+    "endpoint": ""
   }
 ]

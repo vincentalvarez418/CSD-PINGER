@@ -707,11 +707,11 @@ class MiscSidebar(tk.Frame):
             self._scroll_direction = 1
 
         # Move by a tiny fraction instead of whole units
-        step = 0.001 * self._scroll_direction
+        step = 0.0009 * self._scroll_direction
         new_top = max(0.0, min(1.0, top + step))
         self.canvas.yview_moveto(new_top)
 
-        self._auto_scroll_job = self.after(16, self._auto_scroll_tick)
+        self._auto_scroll_job = self.after(50, self._auto_scroll_tick)
 
     def _ping_all(self):
         for row in self.rows:
@@ -1173,22 +1173,18 @@ class HostCard(tk.Frame):
 
 
     def _animate_dot(self):
-        # Safety check: if the webview was hidden or rebuilt, stop animating
+        # Self-healing check: only animate if the webview is active and the dot exists
         if not self._webview_showing or not hasattr(self, "_status_dot") or not self._status_dot.winfo_exists():
             return
 
-        # Toggle the state
         self._blink_state = not self._blink_state
-        
-        # Switch between the bright green and the dark background color
         current_fg = GREEN if self._blink_state else "#0a0f1a"
         
         try:
             self._status_dot.configure(fg=current_fg)
         except Exception:
-            return # Catch-all in case it's destroyed mid-animation
+            return 
 
-        # Schedule the next toggle in 500ms (0.5 seconds)
         self.after(500, self._animate_dot)
 
     def _show_webview(self, url):
@@ -1196,8 +1192,7 @@ class HostCard(tk.Frame):
             return
 
         current_width = self.winfo_width()
-        if current_width < 10:
-            current_width = 520 
+        if current_width < 10: current_width = 520 
 
         self.configure(height=self._locked_height)
         self.grid_propagate(False)
@@ -1206,40 +1201,53 @@ class HostCard(tk.Frame):
         self._webview_showing = True
         self._content.pack_forget()
 
-        # Cleanup old elements
+        # 1. Cleanup old elements
         if hasattr(self, "_web_header") and self._web_header.winfo_exists():
             self._web_header.destroy()
         if hasattr(self, "_loading_overlay"):
             self._loading_overlay.destroy()
+        if hasattr(self, "_content_container") and self._content_container.winfo_exists():
+            self._content_container.destroy()
 
         self._web_frame.configure(height=self._locked_height, width=current_width)
-        self._web_frame.pack(fill="x", expand=False)
+        self._web_frame.pack(fill="both", expand=True)
         self._web_frame.pack_propagate(False)
 
-        # ── LOADING SPINNER (Overlay) ──
-        self._loading_overlay = tk.Frame(self._web_frame, bg="#0a0f1a")
-        self._loading_overlay.place(relx=0.5, rely=0.5, anchor="center")
-        tk.Label(self._loading_overlay, text="○ Loading...", font=("Consolas", 10), fg=TEXT_DIM, bg="#0a0f1a").pack()
-
-        # ── Cosmetic header bar ──
-        self._web_header = tk.Frame(self._web_frame, bg="#0a0f1a", height=22)
-        self._web_header.pack(side="top", fill="x")
+        # 2. Add header at the top (Reduced height to 20px, packed with slight top padding)
+        self._web_header = tk.Frame(self._web_frame, bg="#0a0f1a", height=20)
+        self._web_header.pack(side="top", fill="x", padx=0, pady=(0, 2))
         self._web_header.pack_propagate(False)
 
-        # Status Dot
-        tk.Label(self._web_header, text="●", font=("Consolas", 7), fg=GREEN, bg="#0a0f1a").pack(side="left", padx=(8, 4))
+        # Status Dot (Vertically centered by placing in the header frame)
+        self._status_dot = tk.Label(self._web_header, text="●", font=("Consolas", 7), fg=GREEN, bg="#0a0f1a")
+        self._status_dot.pack(side="left", padx=(8, 4), pady=(2, 0))
+        self._blink_state = True
         self._animate_dot()
-
-        # Domain Text
-        domain = url.split("//")[-1].split("/")[0]
-        tk.Label(self._web_header, text=domain, font=("Consolas", 7, "bold"), fg=TEXT_DIM, bg="#0a0f1a", anchor="w").pack(side="left", fill="x", expand=True)
-
-        # LIVE Indicator
-        tk.Label(self._web_header, text="LIVE", font=("Consolas", 6, "bold"), fg="#10b981", bg="#0a0f1a").pack(side="right", padx=(0, 8))
-
-        # ── Background Task ──
-        import threading
         
+        domain = url.split("//")[-1].split("/")[0]
+        tk.Label(self._web_header, text=domain, font=("Consolas", 7, "bold"), fg=TEXT_DIM, bg="#0a0f1a", anchor="w").pack(side="left", fill="x", expand=True, pady=(2, 0))
+        tk.Label(self._web_header, text="LIVE", font=("Consolas", 6, "bold"), fg="#10b981", bg="#0a0f1a").pack(side="right", padx=(0, 8), pady=(2, 0))
+
+        # 3. Create a dedicated container for the content
+        self._content_container = tk.Frame(self._web_frame, bg="#0a0f1a")
+        self._content_container.pack(side="top", fill="both", expand=True)
+
+        # 4. Add Animated Spinner
+        self._loading_overlay = tk.Frame(self._content_container, bg="#0a0f1a")
+        self._loading_overlay.place(relx=0.5, rely=0.5, anchor="center")
+        self._loading_lbl = tk.Label(self._loading_overlay, text="○ Loading...", font=("Consolas", 10), fg=TEXT_DIM, bg="#0a0f1a")
+        self._loading_lbl.pack()
+        
+        def animate_spinner():
+            if not hasattr(self, "_loading_lbl") or not self._loading_lbl.winfo_exists(): return
+            frames = ["○ Loading...", "◌ Loading...", "● Loading...", "◌ Loading..."]
+            self._spin_state = (getattr(self, "_spin_state", 0) + 1) % len(frames)
+            self._loading_lbl.config(text=frames[self._spin_state])
+            self.after(200, animate_spinner)
+        animate_spinner()
+
+        # 5. Background Task (Offset kept at 105px for best fit)
+        import threading
         def fetch_preview():
             try:
                 from playwright.sync_api import sync_playwright
@@ -1247,60 +1255,44 @@ class HostCard(tk.Frame):
                 import io
 
                 is_slow_local_site = any(k in url.lower() for k in ["gov.ph", "zamboanga", "httpbin"])
-
                 with sync_playwright() as p:
                     browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-gl-drawing-for-tests"])
-                    context = browser.new_context(viewport={"width": 1440, "height": 900})
+                    context = browser.new_context(viewport={"width": 1200, "height": 800})
                     page = context.new_page()
                     
                     if not is_slow_local_site:
                         page.route("**/*", lambda route: route.abort() if route.request.resource_type in ["media", "websocket"] or "analytics" in route.request.url else route.continue_())
                     
-                    timeout_limit = 5000 if is_slow_local_site else 9000
                     try:
-                        page.goto(url, wait_until="commit" if is_slow_local_site else "networkidle", timeout=timeout_limit)
+                        page.goto(url, wait_until="commit" if is_slow_local_site else "networkidle", timeout=5000 if is_slow_local_site else 9000)
                     except Exception: pass
                     
-                    # ── CSS INJECTION & ALIGNMENT ──
-                    try:
-                        if is_slow_local_site:
-                            page.add_style_tag(content=".header-banner, [id*='banner'], [class*='banner'], header { display: none !important; }")
-                        page.evaluate("""() => {
-                            document.body.style.transform = 'scale(0.90)'; 
-                            document.body.style.transformOrigin = 'top left';
-                            document.body.style.width = '111.11%';
-                            window.scrollTo(0, 0);
-                        }""")
-                    except Exception: pass
-
+                    page.evaluate("""() => {
+                        const style = document.createElement('style');
+                        style.innerHTML = `body { margin: 0 !important; padding: 0 !important; transform: scale(0.90); transform-origin: top center; position: relative; top: 95px; width: 100% !important; }`;
+                        document.head.appendChild(style);
+                        window.scrollTo(0, 0);
+                    }""")
                     page.wait_for_timeout(1500 if is_slow_local_site else 800)
-                    img_data = page.screenshot(type="jpeg", quality=60)
-                    context.close()
-                    browser.close()
+                    img_data = page.screenshot(type="jpeg", quality=60, full_page=False)
+                    context.close(); browser.close()
 
-                img = Image.open(io.BytesIO(img_data))
-                img = img.resize((current_width, self._locked_height - 22), Image.Resampling.LANCZOS)
+                img = Image.open(io.BytesIO(img_data)).resize((current_width, self._locked_height - 26), Image.Resampling.LANCZOS)
                 self.after(0, lambda: display_image(img))
-            except Exception as e:
-                print(f"PLAYWRIGHT FETCH ERROR ({url}):", e)
+            except Exception as e: print(f"PLAYWRIGHT FETCH ERROR: {e}")
 
         def display_image(pil_img):
             from PIL import ImageTk
             if not self._webview_showing: return
-            
             if hasattr(self, "_loading_overlay"): self._loading_overlay.destroy()
-            for child in self._web_frame.winfo_children():
-                if child != self._web_header: child.destroy()
-                    
+            for child in self._content_container.winfo_children(): child.destroy()
             self._preview_photo = ImageTk.PhotoImage(pil_img)
-            img_label = tk.Label(self._web_frame, image=self._preview_photo, bg="#0a0f1a")
-            img_label.pack(side="top", fill="both", expand=True)
+            tk.Label(self._content_container, image=self._preview_photo, bg="#0a0f1a").pack(side="top", fill="both", expand=True, pady=0)
 
         threading.Thread(target=fetch_preview, daemon=True).start()
-
-        if hasattr(self, "_webview_job") and self._webview_job:
-            self.after_cancel(self._webview_job)
+        if hasattr(self, "_webview_job") and self._webview_job: self.after_cancel(self._webview_job)
         self._webview_job = self.after(30000, self._hide_webview)
+
 
 
     def _hide_webview(self):
@@ -1321,7 +1313,7 @@ class HostCard(tk.Frame):
     def _build(self):
         self._content = tk.Frame(self, bg=CARD_BG)
         self._content.pack(fill="both", expand=True)
-        self._view_area = tk.Frame(self._content, bg=CARD_BG, height=155)
+        self._view_area = tk.Frame(self._content, bg=CARD_BG, height=170)
         self._view_area.pack(fill="both", expand=True)
         self._view_area.pack_propagate(False)
 
@@ -1417,7 +1409,7 @@ class HostCard(tk.Frame):
         self.dots = []
         for _ in range(PING_COUNT):
             d = tk.Label(dot_row, text="●", font=("Consolas", 10), fg=BORDER, bg=CARD_BG)
-            d.pack(side="left", padx=1)
+            d.pack(side="left", padx=1, pady=(18, 0))
             self.dots.append(d)
 
         bot = tk.Frame(self._content, bg=CARD_BG)
@@ -1671,7 +1663,7 @@ class HostCard(tk.Frame):
             d.config(fg=BORDER)
         self.badge.config(text=" IDLE ", fg=ACCENT, bg=ACCENT_DIM)
         self.badge_frame.config(bg=ACCENT_DIM)
-        self.ts_lbl.config(text="—")
+        self.ts_lbl.config(text="")
         self._apply_dim()
 
     def update_result(self, stats):
@@ -1721,7 +1713,7 @@ class HostCard(tk.Frame):
         for i, d in enumerate(self.dots):
             d.config(fg=fg if i < recv else RED_DIM)
         self._last_ts = f"checked {now}"
-        self.ts_lbl.config(text=f"checked {now}")
+        self.ts_lbl.config(text="")
 
         if should_log(sev):
             what = f"{status} | loss={loss}%"
