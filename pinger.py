@@ -1548,7 +1548,7 @@ class HostCard(tk.Frame):
     def _build(self):
         self._content = tk.Frame(self, bg=CARD_BG)
         self._content.pack(fill="both", expand=True)
-        self._view_area = tk.Frame(self._content, bg=CARD_BG, height=170)
+        self._view_area = tk.Frame(self._content, bg=CARD_BG, height=160)
         self._view_area.pack(fill="both", expand=True)
         self._view_area.pack_propagate(False)
 
