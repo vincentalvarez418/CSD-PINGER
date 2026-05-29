@@ -570,3 +570,8 @@ timestamp,what,server,ip,diagnostic
 2026-05-26 16:02:37,UP | loss=50%,TEST,httpbin.org,"avg=—, recv=5/10, sev=orange_blink"
 2026-05-26 17:18:46,DOWN | loss=100%,TEST,httpbin.org,"avg=—, recv=0/10, sev=red_blink"
 2026-05-26 17:19:05,DOWN | loss=100%,TEST,httpbin.org,"avg=—, recv=0/10, sev=red_blink"
+2026-05-29 16:10:06,DOWN | loss=100%,asd,dead.example.com,"avg=—, recv=0/10, sev=red_blink"
+2026-05-29 16:10:15,DOWN | loss=100%,asd,dead.example.com,"avg=—, recv=0/10, sev=red_blink"
+2026-05-29 17:00:53,TIMEOUT | loss=100%,,0.0.0.0,"avg=—, recv=0/10, sev=red_blink"
+2026-05-29 17:07:40,DOWN | loss=100%,VM https://zamboangacity.gov.ph/08,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"
+2026-05-29 17:07:51,DOWN | loss=100%,VM https://zamboangacity.gov.ph/08,zamboangacity.gov.ph,"avg=—, recv=0/10, sev=red_blink"

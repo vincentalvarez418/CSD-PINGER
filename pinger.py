@@ -200,7 +200,7 @@ def ping_host(ip, count, dot_callback=None):
 
     try:
         proc = subprocess.Popen(
-            ["ping", flag, str(count), "-w", "700", ip],
+            ["ping", flag, str(count), "-w", "300", ip],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             text=True, **kw
         )
@@ -376,9 +376,10 @@ class MiscRow(tk.Frame):
         self.dot.pack(side="left", padx=(0, 6))
 
         self.name_lbl = tk.Label(top, text=self.entry.get("name", "—"),
-                                 font=("Consolas", 9, "bold"), fg=TEXT,
-                                 bg=CARD_BG, anchor="w")
+                                font=("Consolas", 9, "bold"), fg=TEXT,
+                                bg=CARD_BG, anchor="w")
         self.name_lbl.pack(side="left", fill="x", expand=True)
+        self.name_lbl.bind("<Button-3>", lambda e: self._open_edit_modal())
 
         # Delete button with red hover effect
         delete_btn = tk.Button(top, text="✕", font=("Consolas", 7),
@@ -400,8 +401,10 @@ class MiscRow(tk.Frame):
         bot.pack(fill="x", pady=(2, 0))
 
         self.ip_lbl = tk.Label(bot, text=self.entry.get("ip", "—"),
-                               font=("Consolas", 8), fg=TEXT_DIM, bg=CARD_BG, anchor="w")
+                            font=("Consolas", 8), fg=TEXT_DIM, bg=CARD_BG,
+                            anchor="w")
         self.ip_lbl.pack(side="left", fill="x", expand=True)
+        self.ip_lbl.bind("<Button-3>", lambda e: self._open_edit_modal())
 
         self.status_lbl = tk.Label(bot, text="—",
                                    font=("Consolas", 7, "bold"), fg=TEXT_DIM, bg=CARD_BG)
@@ -586,6 +589,215 @@ class MiscRow(tk.Frame):
 
     def ping_now(self):
         self._ping()
+
+
+    def _edit_press(self, event):
+        self._edit_start_x = event.x_root
+        self._edit_start_y = event.y_root
+
+    def _edit_release(self, event):
+        dx = abs(event.x_root - getattr(self, "_edit_start_x", event.x_root))
+        dy = abs(event.y_root - getattr(self, "_edit_start_y", event.y_root))
+        if dx < 5 and dy < 5:
+            self._open_edit_modal()
+
+    def _open_edit_modal(self):
+        modal = tk.Toplevel(self)
+        modal.title("")
+        modal.configure(bg=BG)
+        modal.resizable(False, False)
+        modal.transient(self.winfo_toplevel())
+        modal.grab_set()
+
+        root = self.winfo_toplevel()
+        root.update_idletasks()
+        w, h = 400, 240
+        x = root.winfo_rootx() + (root.winfo_width() - w) // 2
+        y = root.winfo_rooty() + (root.winfo_height() - h) // 2
+        modal.geometry(f"{w}x{h}+{x}+{y}")
+        modal.configure(highlightbackground=ACCENT, highlightthickness=1)
+
+        try:
+            root._dark_titlebar_for(modal)
+        except Exception:
+            pass
+
+        card = tk.Frame(modal, bg=CARD_BG, padx=16, pady=14)
+        card.pack(fill="both", expand=True)
+
+        tk.Label(card, text="EDIT DEVICE", font=("Consolas", 10, "bold"),
+                 fg=TEXT, bg=CARD_BG).pack(anchor="w")
+        tk.Frame(card, bg=ACCENT, height=2).pack(fill="x", pady=(8, 12))
+
+        tk.Label(card, text="NAME", font=("Consolas", 8, "bold"),
+                 fg=TEXT_DIM, bg=CARD_BG).pack(anchor="w")
+        name_wrap = tk.Frame(card, bg=CARD_BG)
+        name_wrap.pack(fill="x", pady=(4, 10))
+        name_var = tk.StringVar(value=self.entry.get("name", ""))
+        name_e = tk.Entry(name_wrap, textvariable=name_var,
+                          font=("Consolas", 10), fg=TEXT, bg=CARD_BG,
+                          insertbackground=TEXT, relief="flat", bd=0,
+                          highlightthickness=0)
+        name_e.pack(fill="x", ipady=6)
+        tk.Frame(name_wrap, bg=BORDER, height=1).pack(fill="x")
+
+        tk.Label(card, text="IP ADDRESS", font=("Consolas", 8, "bold"),
+                 fg=TEXT_DIM, bg=CARD_BG).pack(anchor="w")
+        ip_wrap = tk.Frame(card, bg=CARD_BG)
+        ip_wrap.pack(fill="x", pady=(4, 12))
+        ip_var = tk.StringVar(value=self.entry.get("ip", ""))
+        ip_e = tk.Entry(ip_wrap, textvariable=ip_var,
+                        font=("Consolas", 10), fg=TEXT, bg=CARD_BG,
+                        insertbackground=TEXT, relief="flat", bd=0,
+                        highlightthickness=0)
+        ip_e.pack(fill="x", ipady=6)
+        tk.Frame(ip_wrap, bg=BORDER, height=1).pack(fill="x")
+
+        msg = tk.Label(card, text="", font=("Consolas", 7), fg=TEXT_DIM, bg=CARD_BG)
+        msg.pack(anchor="w")
+
+        btn_row = tk.Frame(card, bg=CARD_BG)
+        btn_row.pack(fill="x", pady=(8, 0))
+
+        def do_save():
+            name = name_var.get().strip()
+            ip   = ip_var.get().strip()
+            if not name:
+                msg.config(text="Need a name", fg=YELLOW)
+                return
+            cleaned = clean_host(ip)
+            if ip and not is_valid_host(cleaned):
+                msg.config(text="Invalid IP", fg=RED)
+                return
+            self.entry["name"] = name
+            self.entry["ip"]   = cleaned
+            self.name_lbl.config(text=name)
+            self.ip_lbl.config(text=cleaned or "—")
+            self.sidebar._save()
+            modal.destroy()
+            self.ping_now()
+
+        tk.Button(btn_row, text="SAVE",
+                  font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
+                  activeforeground=BG, activebackground="#79b8ff",
+                  relief="flat", bd=0, padx=12, pady=5, cursor="hand2",
+                  command=do_save).pack(side="left")
+
+        cancel_btn = tk.Button(btn_row, text="CANCEL",
+                  font=("Consolas", 9, "bold"), fg=TEXT_DIM, bg=CARD_BG,
+                  activeforeground=TEXT, activebackground=BORDER,
+                  relief="flat", bd=0, padx=12, pady=5, cursor="hand2",
+                  command=modal.destroy)
+        cancel_btn.pack(side="left", padx=(8, 0))
+        def cancel_enter(e): cancel_btn.config(fg=RED)
+        def cancel_leave(e): cancel_btn.config(fg=TEXT_DIM)
+        cancel_btn.bind("<Enter>", cancel_enter)
+        cancel_btn.bind("<Leave>", cancel_leave)
+
+        name_e.focus_set()
+        name_e.icursor("end")
+        modal.bind("<Escape>", lambda _: modal.destroy())
+        modal.bind("<Return>", lambda _: do_save())
+
+    def _open_edit_modal(self):
+        modal = tk.Toplevel(self)
+        modal.title("")
+        modal.configure(bg=BG)
+        modal.resizable(False, False)
+        modal.transient(self.winfo_toplevel())
+        modal.grab_set()
+
+        root = self.winfo_toplevel()
+        root.update_idletasks()
+        w, h = 400, 240
+        x = root.winfo_rootx() + (root.winfo_width() - w) // 2
+        y = root.winfo_rooty() + (root.winfo_height() - h) // 2
+        modal.geometry(f"{w}x{h}+{x}+{y}")
+        modal.configure(highlightbackground=ACCENT, highlightthickness=1)
+
+        try:
+            root._dark_titlebar_for(modal)
+        except Exception:
+            pass
+
+        card = tk.Frame(modal, bg=CARD_BG, padx=16, pady=14)
+        card.pack(fill="both", expand=True)
+
+        tk.Label(card, text="EDIT DEVICE", font=("Consolas", 10, "bold"),
+                fg=TEXT, bg=CARD_BG).pack(anchor="w")
+        tk.Frame(card, bg=ACCENT, height=2).pack(fill="x", pady=(8, 12))
+
+        # Name field
+        tk.Label(card, text="NAME", font=("Consolas", 8, "bold"),
+                fg=TEXT_DIM, bg=CARD_BG).pack(anchor="w")
+        name_wrap = tk.Frame(card, bg=CARD_BG)
+        name_wrap.pack(fill="x", pady=(4, 10))
+        name_var = tk.StringVar(value=self.entry.get("name", ""))
+        name_e = tk.Entry(name_wrap, textvariable=name_var,
+                        font=("Consolas", 10), fg=TEXT, bg=CARD_BG,
+                        insertbackground=TEXT, relief="flat", bd=0,
+                        highlightthickness=0)
+        name_e.pack(fill="x", ipady=6)
+        tk.Frame(name_wrap, bg=BORDER, height=1).pack(fill="x")
+
+        # IP field
+        tk.Label(card, text="IP ADDRESS", font=("Consolas", 8, "bold"),
+                fg=TEXT_DIM, bg=CARD_BG).pack(anchor="w")
+        ip_wrap = tk.Frame(card, bg=CARD_BG)
+        ip_wrap.pack(fill="x", pady=(4, 12))
+        ip_var = tk.StringVar(value=self.entry.get("ip", ""))
+        ip_e = tk.Entry(ip_wrap, textvariable=ip_var,
+                        font=("Consolas", 10), fg=TEXT, bg=CARD_BG,
+                        insertbackground=TEXT, relief="flat", bd=0,
+                        highlightthickness=0)
+        ip_e.pack(fill="x", ipady=6)
+        tk.Frame(ip_wrap, bg=BORDER, height=1).pack(fill="x")
+
+        msg = tk.Label(card, text="", font=("Consolas", 7), fg=TEXT_DIM, bg=CARD_BG)
+        msg.pack(anchor="w")
+
+        btn_row = tk.Frame(card, bg=CARD_BG)
+        btn_row.pack(fill="x", pady=(8, 0))
+
+        def do_save():
+            name = name_var.get().strip()
+            ip   = ip_var.get().strip()
+            if not name:
+                msg.config(text="Need a name", fg=YELLOW)
+                return
+            cleaned = clean_host(ip)
+            if ip and not is_valid_host(cleaned):
+                msg.config(text="Invalid IP", fg=RED)
+                return
+            self.entry["name"] = name
+            self.entry["ip"]   = cleaned
+            self.name_lbl.config(text=name)
+            self.ip_lbl.config(text=cleaned or "—")
+            self.sidebar._save()
+            modal.destroy()
+            self.ping_now()
+
+        tk.Button(btn_row, text="SAVE",
+                font=("Consolas", 9, "bold"), fg=BG, bg=ACCENT,
+                activeforeground=BG, activebackground="#79b8ff",
+                relief="flat", bd=0, padx=12, pady=5, cursor="hand2",
+                command=do_save).pack(side="left")
+
+        cancel_btn = tk.Button(btn_row, text="CANCEL",
+                font=("Consolas", 9, "bold"), fg=TEXT_DIM, bg=CARD_BG,
+                activeforeground=TEXT, activebackground=BORDER,
+                relief="flat", bd=0, padx=12, pady=5, cursor="hand2",
+                command=modal.destroy)
+        cancel_btn.pack(side="left", padx=(8, 0))
+        def cancel_enter(e): cancel_btn.config(fg=RED)
+        def cancel_leave(e): cancel_btn.config(fg=TEXT_DIM)
+        cancel_btn.bind("<Enter>", cancel_enter)
+        cancel_btn.bind("<Leave>", cancel_leave)
+
+        name_e.focus_set()
+        name_e.icursor("end")
+        modal.bind("<Escape>", lambda _: modal.destroy())
+        modal.bind("<Return>", lambda _: do_save())
 
 
 # ── Misc Sidebar ─────────────────────────────────────────────────
@@ -1109,9 +1321,16 @@ class HostCard(tk.Frame):
 
         self.configure(bg=bg, highlightbackground=border)
         self.vm_entry.config(bg=bg, fg=vm_fg)
-        if self.badge.cget("text").strip() in ("IDLE", ""):
-            self.badge.config(bg=badge_bg, fg=badge_fg)
-            self.badge_frame.config(bg=badge_bg)
+        current_badge = self.badge.cget("text").strip()
+        if current_badge == "UNNAMED":
+            self.badge.config(fg=TEXT_DIM, bg=BORDER)
+            self.badge_frame.config(bg=BORDER)
+        elif current_badge == "UNCONFIGURED":
+            self.badge.config(fg="#c084fc", bg="#2e1065")
+            self.badge_frame.config(bg="#2e1065")
+        elif current_badge in ("IDLE", ""):
+            self.badge.config(fg=ACCENT, bg=ACCENT_DIM)
+            self.badge_frame.config(bg=ACCENT_DIM)
         self.ip_entry.config(bg=bg, fg=ip_fg)
         self.ip_saved.config(bg=bg)
         self.phys_entry.config(bg=bg)
@@ -1352,8 +1571,24 @@ class HostCard(tk.Frame):
 
         self.badge_frame = tk.Frame(top, bg=ACCENT_DIM, padx=7, pady=2)
         self.badge_frame.pack(side="right")
-        self.badge = tk.Label(self.badge_frame, text=" IDLE ",
-                              font=("Consolas", 8, "bold"), fg=ACCENT, bg=ACCENT_DIM)
+        vm = (self.host.get("vm_name") or "").strip()
+        ip = (self.host.get("ip") or "").strip()
+        has_default_name = bool(_DEFAULT_VM_PATTERN.match(vm)) or not vm
+        if has_default_name and not ip:
+            badge_text = " UNNAMED "
+        elif not ip:
+            badge_text = " UNCONFIGURED "
+        else:
+            badge_text = " IDLE "
+        if badge_text.strip() == "UNNAMED":
+            badge_fg, badge_bg = TEXT_DIM, BORDER
+        elif badge_text.strip() == "UNCONFIGURED":
+            badge_fg, badge_bg = "#c084fc", "#2e1065"
+        else:
+            badge_fg, badge_bg = ACCENT, ACCENT_DIM
+        self.badge = tk.Label(self.badge_frame, text=badge_text,
+                            font=("Consolas", 8, "bold"), fg=badge_fg, bg=badge_bg)
+        self.badge_frame.config(bg=badge_bg)
         self.badge.pack()
 
         ip_row = tk.Frame(self._view_area, bg=CARD_BG)
@@ -1677,8 +1912,23 @@ class HostCard(tk.Frame):
             v.config(text="—", fg=TEXT)
         for d in self.dots:
             d.config(fg=BORDER)
-        self.badge.config(text=" IDLE ", fg=ACCENT, bg=ACCENT_DIM)
-        self.badge_frame.config(bg=ACCENT_DIM)
+        vm = (self.host.get("vm_name") or "").strip()
+        ip = (self.host.get("ip") or "").strip()
+        has_default_name = bool(_DEFAULT_VM_PATTERN.match(vm)) or not vm
+        if has_default_name and not ip:
+            badge_text = " UNNAMED "
+        elif not ip:
+            badge_text = " UNCONFIGURED "
+        else:
+            badge_text = " IDLE "
+        if badge_text.strip() == "UNNAMED":
+            badge_fg, badge_bg = TEXT_DIM, BORDER
+        elif badge_text.strip() == "UNCONFIGURED":
+            badge_fg, badge_bg = "#c084fc", "#2e1065"
+        else:
+            badge_fg, badge_bg = ACCENT, ACCENT_DIM
+        self.badge.config(text=badge_text, fg=badge_fg, bg=badge_bg)
+        self.badge_frame.config(bg=badge_bg)
         self.ts_lbl.config(text="")
         self._apply_dim()
 
@@ -1934,6 +2184,40 @@ class ScrollableFrame(tk.Frame):
         self.canvas.bind("<MouseWheel>", self._mw)
         self.inner.bind("<MouseWheel>",  self._mw)
 
+    def _start_pendulum(self):
+        self._pendulum_dir = 1
+        self._pendulum_pausing = False
+        self._pendulum_job = None
+        self._pendulum_tick()
+
+    def _stop_pendulum(self):
+        if getattr(self, "_pendulum_job", None):
+            self.after_cancel(self._pendulum_job)
+            self._pendulum_job = None
+
+    def _pendulum_tick(self):
+        if not self.canvas.winfo_exists():
+            return
+        top, bottom = self.canvas.yview()
+        if self._pendulum_dir == 1 and bottom >= 1.0:
+            if not self._pendulum_pausing:
+                self._pendulum_pausing = True
+                self._pendulum_job = self.after(1800, self._pendulum_reverse)
+                return
+        elif self._pendulum_dir == -1 and top <= 0.0:
+            if not self._pendulum_pausing:
+                self._pendulum_pausing = True
+                self._pendulum_job = self.after(1800, self._pendulum_reverse)
+                return
+        step = 0.0006 * self._pendulum_dir
+        self.canvas.yview_moveto(max(0.0, min(1.0, top + step)))
+        self._pendulum_job = self.after(30, self._pendulum_tick)
+
+    def _pendulum_reverse(self):
+        self._pendulum_pausing = False
+        self._pendulum_dir *= -1
+        self._pendulum_job = self.after(30, self._pendulum_tick)
+
     def _mw(self, e):
         self.canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
 
@@ -1965,6 +2249,94 @@ class PingApp(tk.Tk):
 
         save_hosts([c.host for c in self.cards])
         self._set_status(f"Deleted {card.host.get('vm_name', '')}", RED)
+
+    def _start_pendulum_idle_watch(self):
+        self._pendulum_idle_job = None
+        self._reset_pendulum_idle_timer()
+
+    def _on_search(self, *_):
+        query = self._search_var.get().strip().lower()
+        if query:
+            self._search_clear.pack(side="right")
+            # Cancel idle while actively searching
+            if self._idle_restore_job:
+                self.after_cancel(self._idle_restore_job)
+                self._idle_restore_job = None
+            self._exit_idle()
+        else:
+            self._search_clear.pack_forget()
+            # Resume idle when search is cleared
+            self._idle_restore_job = self.after(5000, self._enter_idle)
+        self._filter_cards(query)
+
+    def _clear_search(self):
+        self._search_var.set("")
+        self._search_entry.focus_set()
+        # Restore all biometric rows
+        for row in self.misc.rows:
+            row.pack(fill="x", pady=(0, 4))
+
+    def _filter_cards(self, query):
+        # ── Main cards ──
+        if not query:
+            # Restore original grid positions
+            for card in self.cards:
+                info = getattr(card, "_original_grid_info", None)
+                if info:
+                    card.grid(**info)
+                else:
+                    card.grid()
+
+            # Restore all biometric rows
+            for row in self.misc.rows:
+                row.pack(fill="x", pady=(0, 4))
+        else:
+            matched = [c for c in self.cards if self._card_matches(c.host, query)]
+            unmatched = [c for c in self.cards if not self._card_matches(c.host, query)]
+
+            # Save original grid info before touching anything
+            for card in self.cards:
+                if not hasattr(card, "_original_grid_info"):
+                    card._original_grid_info = card.grid_info()
+
+            for card in unmatched:
+                card.grid_remove()
+
+            for i, card in enumerate(matched):
+                r, col = divmod(i, 3)
+                pad_l = (0, 5) if col == 0 else (5, 5) if col == 1 else (5, 0)
+                card.grid(row=r, column=col, sticky="nsew", padx=pad_l, pady=(0, 10))
+
+            # Biometric sidebar rows
+            for row in self.misc.rows:
+                haystack = " ".join([
+                    row.entry.get("name", ""),
+                    row.entry.get("ip", ""),
+                ]).lower()
+                if query in haystack:
+                    row.pack(fill="x", pady=(0, 4))
+                else:
+                    row.pack_forget()
+
+    def _card_matches(self, host, query):
+        haystack = " ".join([
+            host.get("vm_name", ""),
+            host.get("ip", ""),
+            host.get("physical_name", ""),
+            host.get("system_name", ""),
+        ]).lower()
+        return query in haystack
+
+    def _reset_pendulum_idle_timer(self, event=None):
+        if getattr(self, "_pendulum_idle_job", None):
+            self.after_cancel(self._pendulum_idle_job)
+            self._pendulum_idle_job = None
+        self.scroll._stop_pendulum()
+        self._pendulum_idle_job = self.after(7000, self._try_start_pendulum)
+
+    def _try_start_pendulum(self):
+        if len(self.cards) > 9:
+            self.scroll._start_pendulum()
 
     def _swap_cards(self, card_a, card_b):
         cards = self.app.cards if hasattr(self, "app") else self.cards
@@ -2022,7 +2394,7 @@ class PingApp(tk.Tk):
 
     def __init__(self):
         super().__init__()
-        self.title("CSD NETWORK PANEL v.4 Webview")
+        self.title("CSD NETWORK PANEL v.5")
         self.configure(bg=BG)
         self.geometry("1200x760")
         self.resizable(True, True)
@@ -2043,6 +2415,14 @@ class PingApp(tk.Tk):
 
         self._idle_job = None
         self._ui_hidden = False
+
+        self.minsize(1200, 760)
+
+
+        self._start_pendulum_idle_watch()
+        self.bind("<Motion>", self._reset_pendulum_idle_timer, add="+")
+        self.bind_all("<KeyPress>", self._reset_pendulum_idle_timer, add="+")
+        self.bind_all("<ButtonPress>", self._reset_pendulum_idle_timer, add="+")
 
 
         self.after(100, self._dark_titlebar)
@@ -2261,17 +2641,25 @@ class PingApp(tk.Tk):
             self.after_cancel(self._idle_restore_job)
             self._idle_restore_job = None
         self._exit_idle()
+        # Don't restart idle timer if user is actively searching
+        if self.focus_get() == self._search_entry:
+            return
         self._idle_restore_job = self.after(5000, self._enter_idle)
 
     def _enter_idle(self):
         self._ui_hidden = True
         self.hdr.pack_forget()
+        if self._settings_visible:
+            self._settings_frame.pack_forget()
 
     def _exit_idle(self):
         if not getattr(self, "_ui_hidden", False):
             return
         self._ui_hidden = False
         self.hdr.pack(fill="x", after=self._hdr_anchor)
+        if self._settings_visible:
+            self._settings_frame.pack(fill="x", after=self._settings_anchor,
+                                    padx=18, pady=(0, 4))
             
     def _build_ui(self):
         # ── Header ──
@@ -2319,6 +2707,42 @@ class PingApp(tk.Tk):
                           command=lambda l=label: self._user_set_interval(l))
             b.pack(side="left", padx=1)
             self._iv_btns[label] = b
+
+
+                # Search bar (in right_hdr, before the ⚙ button)
+        self._search_var = tk.StringVar()
+        self._search_var.trace_add("write", self._on_search)
+
+        search_inner = tk.Frame(right_hdr, bg=CARD_BG,
+                                highlightbackground=BORDER, highlightthickness=1)
+        search_inner.pack(side="left", padx=(0, 8))
+
+        tk.Label(search_inner, text="⌕", font=("Consolas", 11),
+                fg=TEXT_DIM, bg=CARD_BG).pack(side="left", padx=(8, 4))
+
+        self._search_entry = tk.Entry(
+            search_inner,
+            textvariable=self._search_var,
+            font=("Consolas", 9),
+            fg=TEXT, bg=CARD_BG,
+            insertbackground=TEXT,
+            relief="flat", bd=0,
+            highlightthickness=0,
+            width=25
+        )
+        self._search_entry.pack(side="left", fill="x", expand=True, ipady=6)
+        self._search_entry.bind("<FocusOut>", self._reset_idle_timer)
+
+        self._search_clear = tk.Button(
+            search_inner, text="✕",
+            font=("Consolas", 8),
+            fg=TEXT_DIM, bg=CARD_BG,
+            activeforeground=RED, activebackground=CARD_BG,
+            relief="flat", bd=0, padx=8, cursor="hand2",
+            command=self._clear_search
+        )
+        self._search_clear.pack(side="right")
+        self._search_clear.pack_forget()
 
         # Header buttons
         tk.Button(right_hdr, text="⚙",
@@ -2403,6 +2827,9 @@ class PingApp(tk.Tk):
         self.log_lbl.pack(side="left", padx=(8, 0))
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x")
+
+    
+
         self._settings_anchor = tk.Frame(self, bg=BG, height=0)
         self._settings_anchor.pack(fill="x")
 
@@ -2487,6 +2914,7 @@ class PingApp(tk.Tk):
         r, c = divmod(idx, 3)
         pad_l = (0, 5) if c == 0 else (5, 5) if c == 1 else (5, 0)
         card.grid(row=r, column=c, sticky="nsew", padx=pad_l, pady=(0, 10))
+        card._original_grid_info = card.grid_info()  # ← stamp it
         self.cards.append(card)
         self.scroll.bind_mw(card)
 

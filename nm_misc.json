@@ -12,24 +12,24 @@
     "ip": "192.168.24.233"
   },
   {
-    "name": "ENGINEERS",
-    "ip": "192.168.26.24"
-  },
-  {
     "name": "LATINO",
     "ip": "192.168.19.227"
   },
   {
-    "name": "LEGAL",
-    "ip": "192.168.23.248"
+    "name": "INTERNAL AUDIT",
+    "ip": "192.168.24.250"
+  },
+  {
+    "name": "ENGINEERS",
+    "ip": "192.168.26.24"
   },
   {
     "name": "SECRETARY",
     "ip": "192.168.1.163"
   },
   {
-    "name": "INTERNAL AUDIT",
-    "ip": "192.168.24.250"
+    "name": "LEGAL",
+    "ip": "192.168.23.248"
   },
   {
     "name": "ADMIN",
