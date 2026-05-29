@@ -4,6 +4,7 @@ import subprocess, platform, re, threading, datetime, json, os, sys, csv, socket
 from PIL import Image, ImageTk
 import ctypes
 
+
 try:
     from tkinterweb import HtmlFrame
     HAS_WEBVIEW = True
@@ -1191,14 +1192,12 @@ class HostCard(tk.Frame):
         self.after(500, self._animate_dot)
 
     def _show_webview(self, url):
-        if not HAS_WEBVIEW:
-            return
-
-        self._hide_webview()
-
-        # Lock the card height exactly once using its natural rendered size
         if not self._locked_height or self._locked_height < 10:
             return
+
+        current_width = self.winfo_width()
+        if current_width < 10:
+            current_width = 520 
 
         self.configure(height=self._locked_height)
         self.grid_propagate(False)
@@ -1207,10 +1206,11 @@ class HostCard(tk.Frame):
         self._webview_showing = True
         self._content.pack_forget()
 
-        for child in self._web_frame.winfo_children():
-            child.destroy()
+        # --- REWRITTEN CLEANUP ---
+        if hasattr(self, "_web_header") and self._web_header.winfo_exists():
+            self._web_header.destroy()
 
-        self._web_frame.configure(height=self._locked_height, width=self.winfo_width())
+        self._web_frame.configure(height=self._locked_height, width=current_width)
         self._web_frame.pack(fill="x", expand=False)
         self._web_frame.pack_propagate(False)
 
@@ -1219,107 +1219,129 @@ class HostCard(tk.Frame):
         self._web_header.pack(fill="x")
         self._web_header.pack_propagate(False)
 
-
-        self._status_dot = tk.Label(
-            self._web_header,
-            text="●",
-            font=("Consolas", 7),
-            fg=GREEN,
-            bg="#0a0f1a"
-        )
+        # Status Dot
+        self._status_dot = tk.Label(self._web_header, text="●", font=("Consolas", 7), fg=GREEN, bg="#0a0f1a")
         self._status_dot.pack(side="left", padx=(8, 4))
-
-        # Start the blinking effect
         self._blink_state = True
         self._animate_dot()
 
+        # Domain Text
         domain = url.split("//")[-1].split("/")[0]
-        tk.Label(
-            self._web_header,
-            text=domain,
-            font=("Consolas", 7, "bold"),
-            fg=TEXT_DIM,
-            bg="#0a0f1a",
-            anchor="w"
-        ).pack(side="left", fill="x", expand=True)
+        tk.Label(self._web_header, text=domain, font=("Consolas", 7, "bold"), fg=TEXT_DIM, bg="#0a0f1a", anchor="w").pack(side="left", fill="x", expand=True)
 
-        tk.Label(
-            self._web_header,
-            text="LIVE",
-            font=("Consolas", 6, "bold"),
-            fg="#10b981",
-            bg="#0a0f1a"
-        ).pack(side="right", padx=(0, 8))
+        # LIVE Indicator
+        tk.Label(self._web_header, text="LIVE", font=("Consolas", 6, "bold"), fg="#10b981", bg="#0a0f1a").pack(side="right", padx=(0, 8))
 
-        try:
-            self._webview_widget = HtmlFrame(
-                self._web_frame,
-                messages_enabled=False,
-                vertical_scrollbar=False,
-                horizontal_scrollbar=False,
-            )
-            self._webview_widget.pack(fill="both", expand=True)
-            self._webview_widget.html.configure(zoom=0.40)
-            # Force-hide any scrollbars tkinterweb may have created
+        # ── Fast Hot-Swapping Background Task ──
+        import threading
+        
+        def fetch_preview():
             try:
-                for child in self._webview_widget.winfo_children():
-                    cls = child.winfo_class().lower()
-                    if "scrollbar" in cls or "scroll" in cls:
-                        child.pack_forget()
-                        child.place_forget()
-                        child.grid_forget()
-                        child.configure(width=0)
-            except Exception:
-                pass
-            self._webview_widget.load_url(url)
-            # Suppress any scrollbar that renders after load
-            def _kill_scrollbars():
-                try:
-                    for child in self._webview_widget.winfo_children():
-                        if "scrollbar" in child.winfo_class().lower():
-                            child.place_forget()
-                            child.pack_forget()
-                            child.grid_forget()
-                        for sub in child.winfo_children():
-                            if "scrollbar" in sub.winfo_class().lower():
-                                sub.place_forget()
-                                sub.pack_forget()
-                                sub.grid_forget()
-                except Exception:
-                    pass
-            self.after(1000, _kill_scrollbars)
-            self.after(2000, _kill_scrollbars)
-            self.after(5000, _kill_scrollbars)
-            # Also kill tkinterweb's named internal scrollbar
-            def _kill_vbar():
-                try:
-                    if hasattr(self._webview_widget, "vbar"):
-                        self._webview_widget.vbar.pack_forget()
-                        self._webview_widget.vbar.place_forget()
-                    if hasattr(self._webview_widget, "hbar"):
-                        self._webview_widget.hbar.pack_forget()
-                        self._webview_widget.hbar.place_forget()
-                except Exception:
-                    pass
-            self.after(100, _kill_vbar)
-            self.after(500, _kill_vbar)
-            self.after(1500, _kill_vbar)
-            self.after(3000, _kill_vbar)
+                from playwright.sync_api import sync_playwright
+                from PIL import Image
+                import io
 
-        except Exception as e:
-            print("WEBVIEW ERROR:", e)
-            self._hide_webview()
-            return
+                is_slow_local_site = any(k in url.lower() for k in ["gov.ph", "zamboanga", "httpbin"])
 
+                with sync_playwright() as p:
+                    browser = p.chromium.launch(
+                        headless=True,
+                        args=[
+                            "--no-sandbox", 
+                            "--disable-setuid-sandbox",
+                            "--disable-gl-drawing-for-tests",
+                        ]
+                    )
+                    
+                    context = browser.new_context(viewport={"width": 1440, "height": 900})
+                    page = context.new_page()
+                    
+                    if not is_slow_local_site:
+                        def route_interceptor(route):
+                            if route.request.resource_type in ["media", "websocket"]:
+                                route.abort()
+                            elif "analytics" in route.request.url or "partner" in route.request.url:
+                                route.abort()
+                            else:
+                                route.continue_()
+                        page.route("**/*", route_interceptor)
+                    
+                    timeout_limit = 5000 if is_slow_local_site else 9000
+                    wait_trigger = "commit" if is_slow_local_site else "networkidle"
+
+                    try:
+                        page.goto(url, wait_until=wait_trigger, timeout=timeout_limit)
+                    except Exception:
+                        pass
+                    
+                    # ── PERFECT ZOOM FACTOR & CORNER ALIGNMENT ──
+                    try:
+                        page.evaluate("""() => {
+                            document.documentElement.style.margin = '0';
+                            document.documentElement.style.padding = '0';
+                            document.body.style.margin = '0';
+                            document.body.style.padding = '0';
+                            
+                            document.body.style.transform = 'scale(0.90)'; 
+                            document.body.style.transformOrigin = 'top left';
+                            document.body.style.width = '111.11%';
+                            
+                            // FIXED: Render from absolute top-left corner
+                            window.scrollTo(0, 0);
+                        }""")
+                    except Exception:
+                        pass
+
+                    if not is_slow_local_site:
+                        page.wait_for_timeout(800)
+                    else:
+                        page.wait_for_timeout(1500)
+                    
+                    img_data = page.screenshot(type="jpeg", quality=60)
+                    context.close()
+                    browser.close()
+
+                img = Image.open(io.BytesIO(img_data))
+                
+                target_w = current_width
+                target_h = self._locked_height - 22
+                img = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+                
+                self.after(0, lambda: display_image(img))
+
+            except Exception as e:
+                print(f"PLAYWRIGHT FETCH ERROR ({url}):", e)
+
+        def display_image(pil_img):
+            from PIL import ImageTk
+            if not self._webview_showing:
+                return
+                
+            for child in self._web_frame.winfo_children():
+                if child != self._web_header:
+                    child.destroy()
+                    
+            self._preview_photo = ImageTk.PhotoImage(pil_img)
+            img_label = tk.Label(self._web_frame, image=self._preview_photo, bg="#0a0f1a")
+            img_label.pack(fill="both", expand=True)
+
+        threading.Thread(target=fetch_preview, daemon=True).start()
+
+        if hasattr(self, "_webview_job") and self._webview_job:
+            self.after_cancel(self._webview_job)
         self._webview_job = self.after(30000, self._hide_webview)
+
 
     def _hide_webview(self):
         if not self._webview_showing:
             return
         self._webview_showing = False
         self._web_frame.pack_forget()
-        if self._webview_widget:
-            self._webview_widget.destroy()
+        if hasattr(self, "_webview_widget") and self._webview_widget:
+            try:
+                self._webview_widget.destroy()
+            except Exception:
+                pass
             self._webview_widget = None
         self._content.pack(fill="both", expand=True)
         self.grid_propagate(False)
@@ -2021,7 +2043,7 @@ class PingApp(tk.Tk):
 
     def __init__(self):
         super().__init__()
-        self.title("CSD PINGER v.2a")
+        self.title("CSD NETWORK PANEL v.4 Webview")
         self.configure(bg=BG)
         self.geometry("1200x760")
         self.resizable(True, True)

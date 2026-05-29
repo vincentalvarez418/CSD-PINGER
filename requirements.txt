@@ -1,2 +1,7 @@
 pip install requests
 pip install tkinterweb
+pip install pywebview
+pip install playwright pillow
+
+
+python -m playwright install chromium

@@ -28,35 +28,11 @@
     "port": "75"
   },
   {
-    "vm_name": "VM 08",
-    "ip": "youtube.com",
-    "physical_name": "",
-    "system_name": "",
-    "port": "",
-    "endpoint": ""
-  },
-  {
-    "vm_name": "VM 09",
-    "ip": "google.com",
-    "physical_name": "",
-    "system_name": "",
-    "port": "",
-    "endpoint": ""
-  },
-  {
     "vm_name": "VM https://zamboangacity.gov.ph/08",
     "ip": "zamboangacity.gov.ph",
     "physical_name": "",
     "system_name": "",
     "port": "",
     "endpoint": ""
-  },
-  {
-    "vm_name": "TEST",
-    "ip": "httpbin.org",
-    "physical_name": "TEST",
-    "system_name": "",
-    "port": "80",
-    "endpoint": "/get"
   }
 ]
